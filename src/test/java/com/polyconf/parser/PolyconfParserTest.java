@@ -212,7 +212,7 @@ class PolyconfParserTest {
 
     @Test
     void nullLinesThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
+        assertThrows(IllegalArgumentException.class, () -> parser.parse((List<String>) null));
     }
 
     @Test
@@ -264,5 +264,36 @@ class PolyconfParserTest {
 
         assertEquals(1, result.blocks().size());
         assertEquals(Format.CSV, result.blocks().get(0).detectedFormat());
+    }
+
+    @Test
+    void parseStringContent() {
+        String content = "app.name=polyconf\napp.version=1.0";
+
+        ParseResult result = parser.parse(content);
+
+        assertEquals(1, result.blocks().size());
+        assertEquals("polyconf", result.flattened().get("app.name"));
+    }
+
+    @Test
+    void parseStringContentWithPolicy() {
+        String content = "# @fmt:toml\n[server]\nport = 8080";
+
+        ParseResult result = parser.parse(content, MergePolicy.DEFAULT);
+
+        assertEquals(1, result.blocks().size());
+        assertEquals(Format.TOML, result.blocks().get(0).detectedFormat());
+        assertEquals(8080L, result.flattened().get("server.port"));
+    }
+
+    @Test
+    void parseStringNullThrows() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse((String) null));
+    }
+
+    @Test
+    void parseStringNullPolicyThrows() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse("key=value", null));
     }
 }

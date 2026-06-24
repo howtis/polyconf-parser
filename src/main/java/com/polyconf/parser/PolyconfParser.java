@@ -27,6 +27,7 @@ import com.polyconf.parser.segment.Segment;
 import com.polyconf.parser.segment.Segmenter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,20 @@ public final class PolyconfParser {
 
     public PolyconfParser() {
         this.merger = new ConfigMerger();
+    }
+
+    public ParseResult parse(String content) {
+        if (content == null) {
+            throw new IllegalArgumentException("content must not be null");
+        }
+        return parse(Arrays.asList(content.split("\\R")));
+    }
+
+    public ParseResult parse(String content, MergePolicy policy) {
+        if (content == null) {
+            throw new IllegalArgumentException("content must not be null");
+        }
+        return parse(Arrays.asList(content.split("\\R")), policy);
     }
 
     public ParseResult parse(List<String> lines) {
