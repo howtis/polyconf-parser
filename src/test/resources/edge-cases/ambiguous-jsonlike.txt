@@ -1,0 +1,10 @@
+{ // is this JSON or JSON5?
+  "key": "value",
+  "number": 42,
+  // looks like JSON5 with comment
+  "active": true,
+}
+
+// is this also TOML or HOCON?
+key = "value"
+number = 42

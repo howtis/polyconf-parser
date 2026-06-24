@@ -1,0 +1,40 @@
+// Akka-style actor system configuration
+akka {
+  loglevel = "INFO"
+  stdout-loglevel = "WARN"
+  loggers = ["akka.event.slf4j.Slf4jLogger"]
+  logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
+
+  actor {
+    provider = "cluster"
+    serializers {
+      json = "akka.serialization.jackson.JacksonJsonSerializer"
+    }
+    serialization-bindings {
+      "com.example.MySerializable" = json
+    }
+
+    deployment {
+      /worker {
+        router = round-robin-pool
+        nr-of-instances = 10
+      }
+    }
+  }
+
+  remote {
+    artery {
+      canonical {
+        hostname = "127.0.0.1"
+        port = 25520
+      }
+    }
+  }
+
+  cluster {
+    seed-nodes = [
+      "akka://MySystem@127.0.0.1:25520"
+    ]
+    downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+  }
+}

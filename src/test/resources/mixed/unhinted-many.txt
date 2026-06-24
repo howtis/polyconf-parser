@@ -1,0 +1,31 @@
+<config>
+  <app>
+    <name>myapp</name>
+    <version>1.0.0</version>
+  </app>
+</config>
+
+server.port=8080
+server.host=0.0.0.0
+
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432
+  }
+}
+
+# Application settings
+app:
+  debug: true
+  log_level: debug
+
+[redis]
+host=redis.local
+port=6379
+
+export REDIS_URL=redis://redis.local:6379
+
+metrics {
+  enabled = true
+}

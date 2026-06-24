@@ -1,0 +1,12 @@
+
+KEY_WITH_SPACES   =   value with spaces
+EMPTY_VAL=
+QUOTED_DOUBLE="quoted value"
+QUOTED_SINGLE='single quoted'
+UNICODE_KEY=значение
+SPECIAL_CHARS=!@#$%^&*()_+
+TRAILING_SPACE=hello   
+LEADING_SPACE=   world
+MULTILINE_VAL=line1\
+line2\
+line3

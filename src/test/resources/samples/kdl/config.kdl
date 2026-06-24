@@ -1,0 +1,29 @@
+// KDL document example
+title "KDL Example"
+
+// A node with a single argument
+node "value"
+
+// A node with keyword arguments
+contact name="Alice" email="alice@example.com" active=true
+
+// A node with children
+services {
+    http port=8080 {
+        routes {
+            route path="/api" handler="apiHandler"
+            route path="/health" handler="healthCheck"
+        }
+    }
+    grpc port=9090
+}
+
+// Arrays
+numbers 1 2 3 4 5
+names "Alice" "Bob" "Charlie"
+
+// Type annotations
+count (u32)42
+ratio (f64)3.14159
+label (string)"hello"
+flag (bool)true

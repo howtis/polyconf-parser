@@ -1,0 +1,25 @@
+# Multiline strings (backslash continuation)
+multiline = line one\
+line two\
+line three
+
+# Triple-quoted multiline (TOML style)
+lyrics = """
+Verse 1
+Verse 2
+Bridge
+"""
+
+# Literal multiline (TOML style)
+regex = '''
+\d{3}-\d{4}-\d{4}
+'''
+
+# Quoted strings with escapes
+escaped = "line1\nline2\tindented"
+unicode_esc = "\u0048\u0065\u006C\u006C\u006F"
+
+# Raw string-like values
+path = C:\Users\name\Documents
+url = https://example.com/path?key=value&flag=true
+email = user@example.com

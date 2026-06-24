@@ -1,0 +1,8 @@
+# Ambiguous content: TOML? INI? Properties?
+key = value
+another=123
+enabled=true
+float_val=3.14
+quoted="hello world"
+solo_key
+name = "ambiguous"

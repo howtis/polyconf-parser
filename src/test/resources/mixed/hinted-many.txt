@@ -1,0 +1,45 @@
+# @fmt:toml
+[database]
+host = "localhost"
+port = 5432
+
+# @fmt:properties
+server.host=0.0.0.0
+server.port=8080
+
+# @fmt:yaml
+logging:
+  level: debug
+  outputs:
+    - stdout
+    - file:/var/log/app.log
+
+# @fmt:json
+{
+  "cache": {
+    "ttl": 3600,
+    "maxSize": 1024
+  }
+}
+
+# @fmt:xml
+<security>
+  <cors enabled="true">
+    <origin>https://app.example.com</origin>
+  </cors>
+</security>
+
+# @fmt:dotenv
+export API_KEY=sk-1234567890
+API_SECRET=my-secret-value
+
+# @fmt:hocon
+metrics {
+  enabled = true
+  endpoint = "/metrics"
+}
+
+# @fmt:ini
+[email]
+smtp_host=smtp.example.com
+smtp_port=587

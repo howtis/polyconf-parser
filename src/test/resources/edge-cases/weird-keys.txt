@@ -1,0 +1,23 @@
+# Keys that look like numbers
+123 = value
+3.14 = value
+1e10 = value
+
+# Keys with special characters
+key-with-dash = value
+key_with_underscore = value
+key.with.dot = value
+key:with:colon = value
+key/with/slash = value
+
+# Very long key
+this_is_a_very_long_key_name_that_goes_on_and_on_and_on_and_on_and_on_and_on = value
+
+# Single character keys
+a = 1
+b = 2
+x = 3
+
+# Keys that look like paths
+/path/to/key = value
+C:\\Windows\\System32 = value

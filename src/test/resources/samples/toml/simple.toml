@@ -1,0 +1,10 @@
+title = "TOML Example"
+version = 1
+
+[owner]
+name = "John Doe"
+bio = "Software developer"
+
+[dependencies]
+tomlj = "1.1.0"
+snakeyaml = "2.2"

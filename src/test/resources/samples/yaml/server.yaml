@@ -1,0 +1,30 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  debug: false
+
+database:
+  host: localhost
+  port: 5432
+  name: myapp
+  pool_size: 10
+  credentials:
+    username: admin
+    password: secret
+
+servers:
+  - host: a.example.com
+    port: 8081
+  - host: b.example.com
+    port: 8082
+
+features:
+  enabled:
+    - auth
+    - logging
+    - metrics
+  timeout_ms: 30000
+  pi: 3.14
+  rate_limit:
+    max_requests: 1000
+    window_seconds: 60

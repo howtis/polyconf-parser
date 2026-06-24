@@ -1,0 +1,45 @@
+# @fmt:json5
+{
+  // Ambiguous: looks like both JSON5 and HOCON
+  server: {
+    host: "0.0.0.0",
+    port: 8080,
+  },
+}
+
+# @fmt:toml
+[[products]]
+name = "Widget"
+price = 9.99
+
+# @fmt:hocon
+akka {
+  loglevel = "DEBUG"
+}
+
+# @fmt:json
+{
+  "items": [1, 2, 3]
+}
+
+# @fmt:xml
+<settings>
+  <debug>true</debug>
+</settings>
+
+# @fmt:properties
+log.level=DEBUG
+log.file=/var/log/app.log
+
+# @fmt:yaml
+cache:
+  backend: redis
+  ttl: 300
+
+# @fmt:dotenv
+export NODE_ENV=development
+
+# @fmt:ini
+[paths]
+data=/var/data
+logs=/var/log

@@ -1,0 +1,34 @@
+// Application configuration in HOCON format
+server {
+  host = "0.0.0.0"
+  port = 8080
+  debug = false
+}
+
+database {
+  host = "localhost"
+  host = ${?DB_HOST}
+  port = 5432
+  port = ${?DB_PORT}
+  name = "myapp"
+  pool_size = 10
+
+  credentials {
+    username = "admin"
+    password = "secret"
+  }
+}
+
+features {
+  enabled = ["auth", "logging", "metrics"]
+  timeout_ms = 30000
+  pi = 3.14
+
+  rate_limit {
+    max_requests = 1000
+    window = 60s
+  }
+}
+
+# Override with environment variables
+server.port = ${?SERVER_PORT}

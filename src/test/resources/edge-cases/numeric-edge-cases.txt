@@ -1,0 +1,33 @@
+# Very large integer
+big_number = 9223372036854775807
+
+# Very large float
+big_float = 1.7976931348623157e308
+
+# Negative numbers
+negative_int = -42
+negative_float = -3.14
+negative_exp = -1.5e-10
+
+# Zero variants
+zero_int = 0
+zero_float = 0.0
+negative_zero = -0.0
+
+# Hex and octal (TOML style)
+hex_color = 0xFF00FF
+octal = 0o755
+
+# Boolean-like strings
+bool_string_true = "true"
+bool_string_false = "false"
+bool_string_yes = "yes"
+bool_string_no = "no"
+bool_string_1 = "1"
+bool_string_0 = "0"
+
+# Null-like values
+null_value = null
+nil_value = nil
+none_value = none
+empty_string = ""

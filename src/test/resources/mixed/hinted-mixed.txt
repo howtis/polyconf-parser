@@ -1,0 +1,17 @@
+# @fmt:toml
+[server]
+host = "0.0.0.0"
+port = 8080
+
+# @fmt:yaml
+database:
+  host: localhost
+  port: 5432
+
+# @fmt:json
+{
+  "logging": {
+    "level": "debug",
+    "file": "/var/log/app.log"
+  }
+}

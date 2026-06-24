@@ -1,0 +1,34 @@
+{
+  // Sample data records
+  records: [
+    {
+      id: 1,
+      name: "Alice",
+      email: "alice@example.com",
+      active: true,
+      tags: ["admin", "user"],
+    },
+    {
+      id: 2,
+      name: "Bob",
+      email: "bob@example.com",
+      active: false,
+      tags: ["user"],
+    },
+    {
+      id: 3,
+      /* Inactive user */
+      name: "Charlie",
+      email: null,
+      active: false,
+      tags: [],
+    },
+  ],
+
+  // Trailing comma allowed
+  metadata: {
+    exported: "2024-01-15T10:30:00Z",
+    count: 3,
+    version: "1.0",
+  },
+}

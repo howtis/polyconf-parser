@@ -1,0 +1,38 @@
+// Application configuration
+app {
+  name = "polyconf-parser"
+  version = "1.0.0"
+  description = "A polyglot configuration parser"
+
+  server {
+    host = "0.0.0.0"
+    host = ${?HOST}
+    port = 8080
+    port = ${?PORT}
+  }
+}
+
+database {
+  driver = "org.postgresql.Driver"
+  url = "jdbc:postgresql://localhost:5432/mydb"
+  url = ${?JDBC_DATABASE_URL}
+  user = "admin"
+  password = "secret"
+  password = ${?DB_PASSWORD}
+
+  pool {
+    minimum-size = 5
+    maximum-size = 20
+    idle-timeout = 10 minutes
+  }
+}
+
+features {
+  auth = ${?AUTH_ENABLED}
+  logging = true
+  metrics = true
+}
+
+include "application.conf"
+include "secrets.conf"
+include file("/etc/app/override.conf")

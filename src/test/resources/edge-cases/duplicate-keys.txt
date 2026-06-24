@@ -1,0 +1,23 @@
+# Duplicate keys
+key = first
+key = second
+key = third
+
+# Keys differing only by case
+Name = value1
+name = value2
+NAME = value3
+
+# Duplicate sections (INI style)
+[section]
+key = one
+[section]
+key = two
+
+# Whitespace-only lines between content
+
+
+key1 = value1   
+
+
+key2 = value2

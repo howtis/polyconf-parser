@@ -1,0 +1,10 @@
+# Deeply nested structure
+level1_key = value1
+[level1]
+key = value
+[level1.level2]
+key = value
+[level1.level2.level3]
+key = value
+[level1.level2.level3.level4]
+key = value

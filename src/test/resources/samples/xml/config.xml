@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <server>
+    <host>0.0.0.0</host>
+    <port>8080</port>
+    <debug>false</debug>
+  </server>
+  <database>
+    <host>localhost</host>
+    <port>5432</port>
+    <name>myapp</name>
+    <pool_size>10</pool_size>
+  </database>
+  <features>
+    <enabled>auth</enabled>
+    <enabled>logging</enabled>
+    <enabled>metrics</enabled>
+    <timeout_ms>30000</timeout_ms>
+  </features>
+</config>

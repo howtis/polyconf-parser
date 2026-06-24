@@ -1,0 +1,60 @@
+// Complex KDL example with multiple nesting levels
+
+package name="enterprise-app" version="3.2.1" {
+    authors "Alice" "Bob" {
+        alice email="alice@corp.com" role="lead"
+        bob email="bob@corp.com" role="dev"
+    }
+}
+
+// Infrastructure
+infrastructure {
+    region "us-east-1"
+
+    servers {
+        server name="web-01" ip="10.0.1.10" role="frontend" {
+            nginx version="1.24" worker_processes=4
+        }
+        server name="web-02" ip="10.0.1.11" role="frontend"
+        server name="api-01" ip="10.0.2.10" role="backend" {
+            java version="17" heap="2G"
+        }
+        server name="db-01" ip="10.0.3.10" role="database" {
+            postgresql version="16" {
+                databases "app" "analytics" "cache"
+                replication enabled=true
+            }
+        }
+    }
+}
+
+// Application settings
+settings {
+    // Feature flags
+    features auth=true logging=true metrics=true
+
+    // Limits
+    rate_limit requests=1000 period_sec=60
+    max_upload_mb (u32)50
+
+    // URLs
+    endpoints {
+        api "https://api.example.com/v2"
+        cdn "https://cdn.example.com"
+        docs "https://docs.example.com"
+    }
+}
+
+// Environment-specific overrides
+environment name="production" {
+    debug false
+    log_level "warn"
+}
+
+environment name="staging" {
+    debug true
+    log_level "debug"
+}
+
+// Empty node
+placeholder

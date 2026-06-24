@@ -1,0 +1,41 @@
+{
+  // Single-line comment
+  /*
+   * Multi-line block comment
+   * describing the settings below
+   */
+
+  // Numeric formats
+  integer: 42,
+  negative: -17,
+  hex: 0xFF,
+  float: 3.14159,
+  scientific: 1.5e10,
+  infinity: Infinity,
+  neg_infinity: -Infinity,
+  not_a_number: NaN,
+
+  // Strings  
+  single_quoted: 'hello world',
+  double_quoted: "hello\nworld",
+  unquoted_key: "valid in JSON5",
+
+  // Booleans and null
+  enabled: true,
+  disabled: false,
+  empty: null,
+
+  // Nested with trailing commas
+  nested: {
+    a: 1,
+    b: 2,
+    c: 3,
+  },
+
+  // Array with trailing comma
+  items: [
+    "first",
+    "second",
+    "third",
+  ],
+}

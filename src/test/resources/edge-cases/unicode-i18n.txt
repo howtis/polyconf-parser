@@ -1,0 +1,7 @@
+key_with_unicode_val = значение на русском
+日本語キー = 日本語の値
+한글키 = 한글값
+emoji_key = 🎉🚀💻
+mixed_script = 混合文字テスト테스트
+right_to_left = نص عربي
+accents = résumé café naïve

@@ -1,0 +1,19 @@
+// Application configuration in KDL
+package name="myapp" version="1.0.0"
+
+server host="0.0.0.0" port=8080 {
+    debug false
+    workers 4
+    timeout duration=30
+}
+
+database host="localhost" port=5432 name="myapp" {
+    credentials username="admin" password="secret"
+    pool min=5 max=20
+}
+
+features {
+    auth enabled=true providers=["google","github","email"]
+    logging level="info"
+    metrics enabled=true
+}

@@ -1,0 +1,7 @@
+name: simple-yaml
+version: 1
+author: "Jane Smith"
+tags:
+  - config
+  - yaml
+  - example

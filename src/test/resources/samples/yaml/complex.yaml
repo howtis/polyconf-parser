@@ -1,0 +1,83 @@
+# Application Configuration
+app:
+  name: myapp
+  version: 2.1.0
+  environment: production
+
+# Server Settings
+server:
+  host: 0.0.0.0
+  port: 8080
+  ssl:
+    enabled: true
+    cert: /etc/ssl/cert.pem
+    key: /etc/ssl/key.pem
+  workers: 4
+  timeout: 30s
+
+# Database Configuration
+database:
+  primary:
+    host: db-primary.example.com
+    port: 5432
+    name: myapp_prod
+    pool:
+      min: 5
+      max: 20
+    credentials:
+      username: ${DB_USER}
+      password: ${DB_PASS}
+  replica:
+    host: db-replica.example.com
+    port: 5432
+    name: myapp_prod
+
+# Cache
+cache:
+  redis:
+    host: redis.example.com
+    port: 6379
+    db: 0
+    ttl: 3600
+
+# Feature Flags
+features:
+  auth:
+    enabled: true
+    providers:
+      - google
+      - github
+      - email
+  logging:
+    level: info
+    outputs:
+      - stdout
+      - file:/var/log/app.log
+  metrics:
+    enabled: true
+    endpoint: /metrics
+
+# Rate Limiting
+rate_limit:
+  enabled: true
+  default:
+    requests: 100
+    period: 1m
+  paths:
+    /api:
+      requests: 1000
+      period: 1m
+    /auth:
+      requests: 10
+      period: 1m
+
+# Notifications
+notifications:
+  email:
+    smtp:
+      host: smtp.example.com
+      port: 587
+    from: no-reply@example.com
+  slack:
+    webhook: https://hooks.slack.com/services/xxx
+    channel: "#alerts"
