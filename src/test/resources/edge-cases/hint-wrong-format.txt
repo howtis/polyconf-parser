@@ -1,0 +1,25 @@
+# Wrong format hint without fallback (Limitation 5.2)
+# When user provides # @fmt:json but content is actually TOML,
+# JSON parser fails and returns empty section with no fallback attempt
+
+# @fmt:json
+[server]
+host = "localhost"
+port = 5432
+
+# @fmt:yaml
+<config>
+  <debug>true</debug>
+</config>
+
+# @fmt:xml
+name: myapp
+version: 1.0.0
+
+# @fmt:toml
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432
+  }
+}

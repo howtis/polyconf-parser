@@ -1,0 +1,28 @@
+# Leading zeros in numeric values (Limitation 4.3)
+# Long.parseLong("00123") -> 123, silently dropping leading zeros
+
+# Port numbers with leading zeros
+port = 0080
+alt_port = 08080
+
+# Version-like strings
+version = 01.02.03
+build = 001
+
+# IDs with leading zeros
+employee_id = 00042
+department_code = 001
+
+# Octal-like values (but actually decimal with leading zeros)
+mode = 0755
+permissions = 0644
+
+# Zip codes and phone numbers
+zip_code = 08540
+phone_ext = 0123
+
+# Hex color codes (should not be parsed as numbers)
+hex_color = 0xFF00FF
+
+# Scientific notation (should preserve precision)
+precision_value = 001.2345e02

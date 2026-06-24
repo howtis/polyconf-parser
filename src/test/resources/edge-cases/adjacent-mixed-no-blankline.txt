@@ -1,0 +1,17 @@
+# Adjacent mixed formats without blank line separator (Limitation 2.1)
+# Pipeline assumes each block has one format, so adjacent mixed content gets mis-classified
+key = value
+<config><name>app</name></config>
+host=localhost
+{
+  "debug": true
+}
+# @fmt:toml
+[server]
+port = 8080
+database:
+  host: localhost
+export REDIS_URL=redis://localhost:6379
+metrics {
+  enabled = true
+}

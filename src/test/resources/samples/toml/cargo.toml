@@ -1,0 +1,58 @@
+# Rust Cargo.toml - real-world project manifest
+
+[package]
+name = "polyconf-parser"
+version = "0.1.0"
+edition = "2021"
+description = "Multi-format configuration parser with format auto-detection"
+authors = ["polyconf team"]
+license = "MIT"
+repository = "https://github.com/polyconf/polyconf-parser"
+readme = "README.md"
+keywords = ["config", "parser", "toml", "yaml", "json"]
+categories = ["config", "development-tools", "parsing"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+toml = "0.8"
+quick-xml = "0.31"
+java-properties = "2.0"
+regex = "1.10"
+thiserror = "1.0"
+log = "0.4"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tempfile = "3.8"
+pretty_assertions = "1.4"
+proptest = "1.4"
+
+[build-dependencies]
+shadow-rs = "0.26"
+
+[features]
+default = ["json5", "hocon"]
+json5 = ["json5-format"]
+hocon = ["hocon-rs"]
+full = ["json5", "hocon", "kdl"]
+kdl = ["kdl-rs"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
+
+[profile.bench]
+opt-level = 3
+debug = false
+
+[[bench]]
+name = "parse_benchmark"
+harness = false

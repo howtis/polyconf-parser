@@ -1,0 +1,27 @@
+# Ambiguous: TOML vs Properties
+# Dotted keys are valid in both TOML and Java Properties
+# TOML: dotted keys create nested tables
+# Properties: dotted keys are flat string keys with dot separators
+
+server.host = localhost
+server.port = 8080
+server.debug = false
+
+database.host = db.internal
+database.port = 5432
+database.user = admin
+database.password = secret
+
+logging.level = debug
+logging.format = json
+
+# TOML inline table syntax (NOT valid Properties)
+dependencies = { spring = "6.1", hibernate = "6.4" }
+
+# Properties-specific: backslash line continuation
+allowed.hosts = localhost, \
+                staging.example.com, \
+                production.example.com
+
+# Properties-specific: unicode escape sequences
+welcome.message = \uD658\uC601\uD569\uB2C8\uB2E4

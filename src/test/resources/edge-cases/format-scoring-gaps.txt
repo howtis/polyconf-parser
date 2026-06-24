@@ -1,0 +1,20 @@
+# Format scoring gaps (Limitation 3.2)
+# key =value (no space before =) and key= value (no space after =)
+
+# Standard spacing (scored by TOML/INI/Properties)
+key = value
+
+# No space before equals
+key=value
+
+# No space after equals
+key =value
+
+# No space before equals (different from above)
+key= value
+
+# Mixed: one side spaced, other not
+name= "hello"
+port =5432
+host = "localhost"
+enabled =true

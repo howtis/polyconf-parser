@@ -1,0 +1,29 @@
+# Close score tie between formats (Limitation 2.3)
+# When scores are close or tied, the minority format content is lost.
+# On exact score ties, the first format in iteration order is arbitrarily chosen.
+
+# TOML vs INI: [section] header scores for both
+[server]
+host = localhost
+port = 5432
+# INI extra: no spaces around =    TOML extra: quoted values
+
+# JSON-like vs YAML: both have colon-separated key-value structure
+name: "app"
+version: "1.0"
+debug: true
+port: 8080
+# This could be a JSON object (without braces) or YAML mapping
+
+# Properties vs TOML: dotted keys
+server.host = localhost
+server.port = 5432
+# Properties: dotted keys are its signature
+# TOML: dotted keys also valid in TOML
+
+# HOCON vs JSON5: both allow comments and trailing commas
+{
+  // This is a comment
+  name: app,
+  port: 8080,
+}

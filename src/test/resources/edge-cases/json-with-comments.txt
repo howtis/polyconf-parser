@@ -1,0 +1,23 @@
+# JSON vs JSON5 ambiguity: JSON with comments or trailing commas
+# Standard JSON does not allow comments, but JSON5 does.
+# Many real-world JSON configs (VSCode settings, tsconfig) include comments
+
+{
+  // Single-line comment - valid in JSON5, invalid in JSON
+  "name": "myapp",
+  "version": "1.0.0",
+  /* Multi-line
+     comment - valid in JSON5, invalid in JSON */
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    // Trailing comma - valid in JSON5, invalid in JSON
+  },
+  "features": [
+    "auth",
+    "logging",
+    "metrics", // trailing comma
+  ],
+  # Hash comment - valid in YAML and TOML, NOT valid in JSON/JSON5
+  "environment": "production"
+}

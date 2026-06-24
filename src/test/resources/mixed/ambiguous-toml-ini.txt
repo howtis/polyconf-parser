@@ -1,0 +1,22 @@
+# Ambiguous: TOML vs INI
+# Both use [section] syntax. Both use key = value syntax.
+# Distinction: TOML requires quotes around string values,
+# INI allows bare values (no quotes required)
+
+[server]
+host = localhost
+port = 8080
+debug = false
+name = "api-server"
+
+[database]
+host = db.internal
+port = 5432
+user = admin
+password = secret
+pool_size = 10
+
+[logging]
+level = debug
+format = json
+output = /var/log/app.log

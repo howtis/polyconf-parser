@@ -1,0 +1,51 @@
+# HOCON-unique syntax that should not be confused with other formats
+# HOCON has several features not found in JSON, YAML, or TOML
+
+# Substitutions (self-referencing)
+app {
+  name = "MyApp"
+  # Full path substitution
+  display-name = ${app.name}
+  # Relative path substitution
+  description = ${name} service
+}
+
+# Optional substitution with default (${?var} syntax)
+database {
+  # Use env var or fallback
+  url = "postgres://localhost:5432/mydb"
+  url = ${?DATABASE_URL}
+  # Optional override with default
+  pool-size = 10
+  pool-size = ${?DB_POOL_SIZE}
+}
+
+# Concatenation
+path {
+  base = "/var/log"
+  app = ${path.base}"/myapp"
+}
+
+# Include directive (reference to another file)
+include "common.conf"
+
+# Duration format
+timeouts {
+  request = 30 seconds
+  idle = 5 minutes
+  connect = 500 milliseconds
+}
+
+# Size format
+limits {
+  max-upload = 10MB
+  max-memory = 512MiB
+  buffer = 4KB
+}
+
+# Multi-line values with proper indentation
+description = """
+  This is a multi-line
+  description that preserves
+  its formatting.
+  """

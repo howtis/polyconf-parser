@@ -1,0 +1,29 @@
+# Real-world microservice configuration mixing multiple formats
+# Similar to Spring Boot's spring.config.import or Kustomize overlays
+# Each block separated by blank line — a realistic multi-format file
+
+# @fmt:properties
+# Build-time properties (gradle.properties style)
+app.name=order-service
+app.version=2.1.0
+spring.boot.version=3.3.0
+
+# @fmt:yaml
+# Runtime application config
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/orders
+    hikari:
+      maximum-pool-size: 20
+
+# @fmt:dotenv
+# Environment-specific overrides (12-factor app)
+DB_HOST=postgres-primary.internal
+DB_PORT=5432
+SPRING_PROFILES_ACTIVE=production
+
+# No hint: requires auto-detection
+[metrics]
+enabled = true
+export_interval_sec = 30
+backend = prometheus

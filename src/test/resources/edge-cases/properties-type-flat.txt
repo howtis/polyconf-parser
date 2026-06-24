@@ -1,0 +1,31 @@
+# PropertiesParser type flattening (Limitation 4.1)
+# PropertiesParser stores all values as STRING, losing type information
+# Structured parsers (YAML, JSON, TOML) correctly infer types
+
+# These should be INTEGER but PropertiesParser stores as STRING
+server.port=8080
+max_connections=200
+timeout=30
+
+# These should be BOOLEAN but PropertiesParser stores as STRING
+feature.enabled=true
+debug.mode=false
+cache.disabled=false
+
+# These should be FLOAT but PropertiesParser stores as STRING
+threshold=0.75
+ratio=3.14
+temperature=-2.5
+
+# These should be NULL but PropertiesParser stores as STRING
+optional.key=null
+missing.value=nil
+
+# Comma-separated list (should be array, becomes flat string)
+allowed_origins=localhost,example.com,api.example.com
+
+# YAML equivalent that preserves types
+# server:
+#   port: 8080
+#   max_connections: 200
+#   timeout: 30

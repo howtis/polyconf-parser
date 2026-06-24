@@ -1,0 +1,29 @@
+# TOML array of tables [[array]] vs INI section [section] ambiguity
+# Both use bracket syntax but mean fundamentally different things
+
+# TOML-style: array of tables
+[[products]]
+name = "Hammer"
+sku = 738594937
+
+[[products]]
+name = "Nail"
+sku = 284758393
+
+# INI-style: nested section
+[products.hammer]
+name = "Hammer"
+sku = 738594937
+
+[products.nail]
+name = "Nail"
+sku = 284758393
+
+# The ambiguity: is [[fruits]] a TOML array of tables or INI double-bracket section?
+[[fruits]]
+name = "apple"
+color = "red"
+
+[[fruits]]
+name = "banana"
+color = "yellow"
