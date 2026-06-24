@@ -37,6 +37,11 @@ public final class ConfigAccessor {
                 String idxPrefix = key + "[" + i + "]";
                 if (item instanceof ConfigValue v) {
                     result.put(idxPrefix, v.rawValue());
+                } else if (item instanceof ConfigSection section) {
+                    // Directly flatten children without adding section's internal key
+                    for (ConfigNode child : section.children().values()) {
+                        flatten(child, idxPrefix, result);
+                    }
                 } else {
                     flatten(item, idxPrefix, result);
                 }

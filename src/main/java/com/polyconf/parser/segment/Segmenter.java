@@ -26,17 +26,48 @@ public final class Segmenter {
 
         List<Segment> segments = new ArrayList<>();
         int blockStart = -1;
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
 
         for (int i = 0; i < lines.size(); i++) {
-            boolean isBlank = lines.get(i).isBlank();
+            String line = lines.get(i);
+            boolean isBlank = line.isBlank();
             boolean isHint = hintLines.contains(i);
+
+            // Track brace/bracket depth to avoid splitting inside {} or []
+            for (int j = 0; j < line.length(); j++) {
+                char c = line.charAt(j);
+                if (c == '\\' && (inSingleQuote || inDoubleQuote) && j + 1 < line.length()) {
+                    j++;
+                    continue;
+                }
+                if (c == '\'' && !inDoubleQuote) {
+                    inSingleQuote = !inSingleQuote;
+                    continue;
+                }
+                if (c == '"' && !inSingleQuote) {
+                    inDoubleQuote = !inDoubleQuote;
+                    continue;
+                }
+                if (inSingleQuote || inDoubleQuote) {
+                    continue;
+                }
+                if (c == '{') braceDepth++;
+                else if (c == '}') braceDepth--;
+                else if (c == '[') bracketDepth++;
+                else if (c == ']') bracketDepth--;
+            }
+
+            boolean insideBlock = braceDepth > 0 || bracketDepth > 0;
 
             if (blockStart < 0) {
                 if (!isBlank) {
                     blockStart = i;
                 }
             } else {
-                if (isBlank || isHint) {
+                if ((isBlank && !insideBlock) || isHint) {
                     segments.add(new Segment(blockStart, i - 1));
                     blockStart = -1;
                     if (isHint) {
