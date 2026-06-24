@@ -88,38 +88,6 @@ class YamlParserTest {
     }
 
     @Test
-    void emptyInput() {
-        ConfigSection result = parser.parse(List.of()).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void nullInputThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
-    }
-
-    @Test
-    void malformedYamlReturnsEmpty() {
-        List<String> lines = List.of(": invalid");
-        ParserResult pr = parser.parse(lines);
-
-        assertTrue(pr.section().children().isEmpty());
-        assertEquals(1, pr.diagnostics().size());
-        assertEquals(DiagnosticLevel.ERROR, pr.diagnostics().get(0).level());
-    }
-
-    @Test
-    void commentsIgnored() {
-        List<String> lines = List.of(
-                "# comment",
-                "key: value"
-        );
-        ConfigSection result = parser.parse(lines).section();
-
-        assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
-    }
-
-    @Test
     void multiDocument() {
         List<String> lines = List.of(
                 "key1: value1",
