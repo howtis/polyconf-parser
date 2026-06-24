@@ -1,9 +1,12 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
+import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.ValueType;
 
 import org.w3c.dom.Document;
@@ -25,28 +28,33 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public final class XmlParser implements LenientParser {
 
     @Override
-    public ConfigSection parse(List<String> lines) {
+    public ParserResult parse(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");
         }
 
         String text = String.join("\n", lines);
         if (text.isBlank()) {
-            return new ConfigSection("", null, "");
+            return ParserResult.ok(new ConfigSection("", null, ""));
         }
 
         Document doc;
         try {
             doc = parseLenient(text);
         } catch (Exception e) {
-            return new ConfigSection("", null, "");
+            return new ParserResult(
+                    new ConfigSection("", null, ""),
+                    List.of(new BlockDiagnostic(0, lines.size() - 1,
+                            "XML parse error: " + e.getMessage(),
+                            DiagnosticLevel.ERROR))
+            );
         }
 
         Map<String, ConfigNode> children = new LinkedHashMap<>();
         Element root = doc.getDocumentElement();
         children.put(root.getTagName(), convertElement(root));
 
-        return new ConfigSection("", children, null, "");
+        return ParserResult.ok(new ConfigSection("", children, null, ""));
     }
 
     private Document parseLenient(String text) throws Exception {

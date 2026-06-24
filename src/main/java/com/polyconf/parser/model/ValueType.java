@@ -5,5 +5,7 @@ public enum ValueType {
     INTEGER,
     BOOLEAN,
     FLOAT,
+    DATE,
+    DATETIME,
     NULL
 }

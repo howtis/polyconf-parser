@@ -1,9 +1,12 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
+import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.ValueType;
 
 import org.tomlj.Toml;
@@ -11,32 +14,56 @@ import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
 import org.tomlj.TomlTable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class TomlParser implements LenientParser {
 
     @Override
-    public ConfigSection parse(List<String> lines) {
+    public ParserResult parse(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");
         }
 
         String text = String.join("\n", lines);
         if (text.isBlank()) {
-            return new ConfigSection("", null, "");
+            return ParserResult.ok(new ConfigSection("", null, ""));
         }
 
-        TomlParseResult result = Toml.parse(text);
-        Map<String, ConfigNode> children = new LinkedHashMap<>();
+        try {
+            TomlParseResult result = Toml.parse(text);
+            if (result.hasErrors()) {
+                String errorMsg = result.errors().stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining("; "));
+                return new ParserResult(
+                        new ConfigSection("", null, ""),
+                        List.of(new BlockDiagnostic(0, lines.size() - 1,
+                                "TOML parse error: " + errorMsg,
+                                DiagnosticLevel.ERROR))
+                );
+            }
+            Map<String, ConfigNode> children = new LinkedHashMap<>();
 
-        for (String key : result.keySet()) {
-            children.put(key, convertValue(key, result.get(key), result));
+            for (String key : result.keySet()) {
+                children.put(key, convertValue(key, result.get(key), result));
+            }
+
+            return ParserResult.ok(new ConfigSection("", children, null, ""));
+        } catch (Exception e) {
+            return new ParserResult(
+                    new ConfigSection("", null, ""),
+                    List.of(new BlockDiagnostic(0, lines.size() - 1,
+                            "TOML parse error: " + e.getMessage(),
+                            DiagnosticLevel.ERROR))
+            );
         }
-
-        return new ConfigSection("", children, null, "");
     }
 
     private ConfigNode convertValue(String key, Object value, TomlParseResult toml) {
@@ -71,6 +98,12 @@ public final class TomlParser implements LenientParser {
         }
         if (value instanceof Double) {
             return new ConfigValue(key, value, ValueType.FLOAT, null, "");
+        }
+        if (value instanceof LocalDate) {
+            return new ConfigValue(key, value, ValueType.DATE, null, "");
+        }
+        if (value instanceof OffsetDateTime || value instanceof LocalDateTime) {
+            return new ConfigValue(key, value, ValueType.DATETIME, null, "");
         }
         return new ConfigValue(key, value.toString(), ValueType.STRING, null, "");
     }

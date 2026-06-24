@@ -4,6 +4,8 @@ import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.ParserResult;
+import com.polyconf.parser.model.ValueType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -20,7 +22,7 @@ class CsvParserTest {
                 "name,age,city",
                 "John,30,Seoul"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         assertEquals(1, rows.items().size());
@@ -37,7 +39,7 @@ class CsvParserTest {
                 "Alice,25",
                 "Bob,35"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         assertEquals(2, rows.items().size());
@@ -49,7 +51,7 @@ class CsvParserTest {
                 "name,description",
                 "\"Doe, John\",\"Hello, World\""
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         ConfigSection row = (ConfigSection) rows.items().get(0);
@@ -63,7 +65,7 @@ class CsvParserTest {
                 "text",
                 "\"She said \"\"hello\"\"\""
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         ConfigSection row = (ConfigSection) rows.items().get(0);
@@ -77,7 +79,7 @@ class CsvParserTest {
                 "",
                 "value"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         assertEquals(1, rows.items().size());
@@ -86,7 +88,7 @@ class CsvParserTest {
     @Test
     void headerOnlyReturnsEmptyRows() {
         List<String> lines = List.of("a,b,c");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         assertTrue(rows.items().isEmpty());
@@ -98,7 +100,7 @@ class CsvParserTest {
                 "key",
                 "v1,v2,v3"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         ConfigSection row = (ConfigSection) rows.items().get(0);
@@ -111,7 +113,7 @@ class CsvParserTest {
                 "a,b,c",
                 "1"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         ConfigSection row = (ConfigSection) rows.items().get(0);
@@ -121,7 +123,7 @@ class CsvParserTest {
 
     @Test
     void emptyInput() {
-        ConfigSection result = parser.parse(List.of());
+        ConfigSection result = parser.parse(List.of()).section();
         assertTrue(result.children().isEmpty());
     }
 
@@ -136,11 +138,98 @@ class CsvParserTest {
                 " name , age ",
                 " John , 30 "
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList rows = (ConfigList) result.children().get("rows");
         ConfigSection row = (ConfigSection) rows.items().get(0);
         assertEquals("John", ((ConfigValue) row.children().get("name")).asString().orElseThrow());
         assertEquals("30", ((ConfigValue) row.children().get("age")).asString().orElseThrow());
+    }
+
+    @Test
+    void integerTypeInference() {
+        List<String> lines = List.of(
+                "name,count",
+                "John,30"
+        );
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        ConfigValue count = (ConfigValue) row.children().get("count");
+        assertEquals(ValueType.INTEGER, count.type());
+        assertEquals(30, count.asInt().orElseThrow());
+    }
+
+    @Test
+    void booleanTypeInference() {
+        List<String> lines = List.of(
+                "name,active",
+                "John,true"
+        );
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        ConfigValue active = (ConfigValue) row.children().get("active");
+        assertEquals(ValueType.BOOLEAN, active.type());
+        assertTrue(active.asBool().orElseThrow());
+    }
+
+    @Test
+    void floatTypeInference() {
+        List<String> lines = List.of(
+                "name,score",
+                "John,3.14"
+        );
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        ConfigValue score = (ConfigValue) row.children().get("score");
+        assertEquals(ValueType.FLOAT, score.type());
+    }
+
+    @Test
+    void tabDelimiter() {
+        CsvParser tabParser = new CsvParser('\t');
+        List<String> lines = List.of(
+                "name\tage",
+                "John\t30"
+        );
+        ConfigSection result = tabParser.parse(lines).section();
+
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        assertEquals(1, rows.items().size());
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertEquals("John", ((ConfigValue) row.children().get("name")).asString().orElseThrow());
+    }
+
+    @Test
+    void semicolonDelimiter() {
+        CsvParser semiParser = new CsvParser(';');
+        List<String> lines = List.of(
+                "name;age",
+                "John;30"
+        );
+        ConfigSection result = semiParser.parse(lines).section();
+
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertEquals("John", ((ConfigValue) row.children().get("name")).asString().orElseThrow());
+    }
+
+    @Test
+    void pipeDelimiter() {
+        CsvParser pipeParser = new CsvParser('|');
+        List<String> lines = List.of(
+                "name|age",
+                "John|30"
+        );
+        ConfigSection result = pipeParser.parse(lines).section();
+
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertEquals("John", ((ConfigValue) row.children().get("name")).asString().orElseThrow());
     }
 }

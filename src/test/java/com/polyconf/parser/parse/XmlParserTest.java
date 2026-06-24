@@ -4,6 +4,8 @@ import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
+import com.polyconf.parser.model.ParserResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,7 +19,7 @@ class XmlParserTest {
     @Test
     void simpleElement() {
         List<String> lines = List.of("<root><name>hello</name></root>");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection root = (ConfigSection) result.children().get("root");
         ConfigSection name = (ConfigSection) root.children().get("name");
@@ -27,7 +29,7 @@ class XmlParserTest {
     @Test
     void elementWithAttributes() {
         List<String> lines = List.of("<root><db host=\"localhost\" port=\"5432\"/></root>");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection root = (ConfigSection) result.children().get("root");
         ConfigSection db = (ConfigSection) root.children().get("db");
@@ -38,7 +40,7 @@ class XmlParserTest {
     @Test
     void nestedElements() {
         List<String> lines = List.of("<config><database><host>localhost</host></database></config>");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection config = (ConfigSection) result.children().get("config");
         ConfigSection database = (ConfigSection) config.children().get("database");
@@ -49,7 +51,7 @@ class XmlParserTest {
     @Test
     void repeatedElementsBecomeList() {
         List<String> lines = List.of("<root><item>a</item><item>b</item></root>");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection root = (ConfigSection) result.children().get("root");
         ConfigList items = (ConfigList) root.children().get("item");
@@ -65,7 +67,7 @@ class XmlParserTest {
                 "  <key>value</key>",
                 "</root>"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection root = (ConfigSection) result.children().get("root");
         assertNotNull(root.children().get("key"));
@@ -74,20 +76,22 @@ class XmlParserTest {
     @Test
     void malformedXmlReturnsEmpty() {
         List<String> lines = List.of("<root><unclosed>");
-        ConfigSection result = parser.parse(lines);
+        ParserResult pr = parser.parse(lines);
 
-        assertTrue(result.children().isEmpty());
+        assertTrue(pr.section().children().isEmpty());
+        assertEquals(1, pr.diagnostics().size());
+        assertEquals(DiagnosticLevel.ERROR, pr.diagnostics().get(0).level());
     }
 
     @Test
     void emptyInput() {
-        ConfigSection result = parser.parse(List.of());
+        ConfigSection result = parser.parse(List.of()).section();
         assertTrue(result.children().isEmpty());
     }
 
     @Test
     void blankInput() {
-        ConfigSection result = parser.parse(List.of("   "));
+        ConfigSection result = parser.parse(List.of("   ")).section();
         assertTrue(result.children().isEmpty());
     }
 
@@ -99,7 +103,7 @@ class XmlParserTest {
     @Test
     void elementWithTextAndChild() {
         List<String> lines = List.of("<root><parent>text<child>val</child></parent></root>");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection root = (ConfigSection) result.children().get("root");
         ConfigSection parent = (ConfigSection) root.children().get("parent");

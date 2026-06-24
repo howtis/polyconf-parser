@@ -1,8 +1,11 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
+import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.Provenance;
 import com.polyconf.parser.model.ValueType;
 
@@ -13,7 +16,7 @@ import java.util.Map;
 public final class IniParser implements LenientParser {
 
     @Override
-    public ConfigSection parse(List<String> lines) {
+    public ParserResult parse(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");
         }
@@ -39,9 +42,7 @@ public final class IniParser implements LenientParser {
                             sections.put(entry.getKey(), entry.getValue());
                         }
                     }
-                    ConfigSection section = new ConfigSection(sectionName, null, "");
-                    sections.put(sectionName, section);
-                    current = section.children();
+                    current = getOrCreateSectionPath(sections, sectionName);
                     currentSectionKey = sectionName;
                 }
                 continue;
@@ -69,10 +70,26 @@ public final class IniParser implements LenientParser {
         }
 
         if (!sections.isEmpty()) {
-            return new ConfigSection("", sections, null, "");
+            return ParserResult.ok(new ConfigSection("", sections, null, ""));
         }
 
-        return new ConfigSection("", globalKeys, null, "");
+        return ParserResult.ok(new ConfigSection("", globalKeys, null, ""));
+    }
+
+    private Map<String, ConfigNode> getOrCreateSectionPath(Map<String, ConfigNode> root, String path) {
+        String[] parts = path.split("\\.");
+        Map<String, ConfigNode> current = root;
+        for (String part : parts) {
+            ConfigNode existing = current.get(part);
+            if (existing instanceof ConfigSection section) {
+                current = section.children();
+            } else {
+                ConfigSection newSection = new ConfigSection(part, new LinkedHashMap<>(), null, "");
+                current.put(part, newSection);
+                current = newSection.children();
+            }
+        }
+        return current;
     }
 
     private static boolean isComment(String line) {

@@ -4,13 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
+import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
+import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.Provenance;
 import com.polyconf.parser.model.ValueType;
 
@@ -27,21 +31,26 @@ public final class JsonParser implements LenientParser {
             .create();
 
     @Override
-    public ConfigSection parse(List<String> lines) {
+    public ParserResult parse(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");
         }
 
         String text = String.join("\n", lines);
         if (text.isBlank()) {
-            return new ConfigSection("", null, "");
+            return ParserResult.ok(new ConfigSection("", null, ""));
         }
 
         JsonElement root;
         try {
             root = parseLenient(text);
         } catch (Exception e) {
-            return new ConfigSection("", null, "");
+            return new ParserResult(
+                    new ConfigSection("", null, ""),
+                    List.of(new BlockDiagnostic(0, lines.size() - 1,
+                            "JSON parse error: " + e.getMessage(),
+                            DiagnosticLevel.ERROR))
+            );
         }
 
         Map<String, ConfigNode> children = new LinkedHashMap<>();
@@ -49,9 +58,16 @@ public final class JsonParser implements LenientParser {
             for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject().entrySet()) {
                 children.put(entry.getKey(), convertElement(entry.getKey(), entry.getValue(), 0));
             }
+        } else if (root.isJsonArray()) {
+            List<ConfigNode> items = new ArrayList<>();
+            JsonArray arr = root.getAsJsonArray();
+            for (int i = 0; i < arr.size(); i++) {
+                items.add(convertElement(String.valueOf(i), arr.get(i), 0));
+            }
+            children.put("root", new ConfigList("root", items, null, ""));
         }
 
-        return new ConfigSection("", children, null, "");
+        return ParserResult.ok(new ConfigSection("", children, null, ""));
     }
 
     private JsonElement parseLenient(String text) {

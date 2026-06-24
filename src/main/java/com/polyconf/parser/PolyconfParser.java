@@ -13,6 +13,7 @@ import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.Format;
 import com.polyconf.parser.model.ParseResult;
+import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.parse.CsvParser;
 import com.polyconf.parser.parse.DotenvParser;
 import com.polyconf.parser.parse.IniParser;
@@ -76,7 +77,7 @@ public final class PolyconfParser {
 
             Hint hint = findHint(hints, startLine);
             BlockResult blockResult = hint != null
-                    ? processHintedBlock(blockLines, hint, startLine, endLine)
+                    ? processHintedBlock(blockLines, hint, startLine, endLine, allDiagnostics)
                     : processClassifiedBlock(blockLines, startLine, endLine, allDiagnostics);
 
             blockResults.add(blockResult);
@@ -96,11 +97,13 @@ public final class PolyconfParser {
             List<String> blockLines,
             Hint hint,
             int startLine,
-            int endLine
+            int endLine,
+            List<BlockDiagnostic> diagnostics
     ) {
         LenientParser parser = parserFor(hint.format());
-        ConfigSection section = parser.parse(blockLines);
-        return new BlockResult(startLine, endLine, hint.format(), 1.0, true, section);
+        ParserResult pr = parser.parse(blockLines);
+        diagnostics.addAll(pr.diagnostics());
+        return new BlockResult(startLine, endLine, hint.format(), 1.0, true, pr.section());
     }
 
     private BlockResult processClassifiedBlock(
@@ -127,8 +130,9 @@ public final class PolyconfParser {
             int secondScore = ranked.size() > 1 ? ranked.get(1).getValue() : 0;
             double confidence = computeConfidence(primaryScore, secondScore);
             LenientParser parser = parserFor(primary);
-            ConfigSection section = parser.parse(blockLines);
-            return new BlockResult(startLine, endLine, primary, confidence, false, section);
+            ParserResult pr = parser.parse(blockLines);
+            diagnostics.addAll(pr.diagnostics());
+            return new BlockResult(startLine, endLine, primary, confidence, false, pr.section());
         }
 
         return processAmbiguousBlock(blockLines, ranked, startLine, endLine, diagnostics);
@@ -146,8 +150,12 @@ public final class PolyconfParser {
         int score = ranked.get(0).getValue();
         double confidence = computeConfidence(score, score);
 
-        ConfigSection section1 = parserFor(primary).parse(blockLines);
-        ConfigSection section2 = parserFor(secondary).parse(blockLines);
+        ParserResult pr1 = parserFor(primary).parse(blockLines);
+        ParserResult pr2 = parserFor(secondary).parse(blockLines);
+        ConfigSection section1 = pr1.section();
+        ConfigSection section2 = pr2.section();
+        diagnostics.addAll(pr1.diagnostics());
+        diagnostics.addAll(pr2.diagnostics());
 
         ResultDivergence.Level divergence = ResultDivergence.compare(section1, section2);
 

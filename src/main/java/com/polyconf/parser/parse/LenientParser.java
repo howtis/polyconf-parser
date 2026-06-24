@@ -1,11 +1,11 @@
 package com.polyconf.parser.parse;
 
-import com.polyconf.parser.model.ConfigSection;
+import com.polyconf.parser.model.ParserResult;
 
 import java.util.List;
 
 @FunctionalInterface
 public interface LenientParser {
 
-    ConfigSection parse(List<String> lines);
+    ParserResult parse(List<String> lines);
 }

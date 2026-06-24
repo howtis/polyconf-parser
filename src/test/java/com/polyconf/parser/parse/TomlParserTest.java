@@ -3,6 +3,9 @@ package com.polyconf.parser.parse;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
+import com.polyconf.parser.model.ParserResult;
+import com.polyconf.parser.model.ValueType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,7 +19,7 @@ class TomlParserTest {
     @Test
     void basicKeyValue() {
         List<String> lines = List.of("name = \"hello\"");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
         assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
@@ -25,7 +28,7 @@ class TomlParserTest {
     @Test
     void integerValue() {
         List<String> lines = List.of("port = 5432");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(5432, ((ConfigValue) result.children().get("port")).asInt().orElseThrow());
     }
@@ -33,7 +36,7 @@ class TomlParserTest {
     @Test
     void booleanValues() {
         List<String> lines = List.of("enabled = true", "debug = false");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertTrue(((ConfigValue) result.children().get("enabled")).asBool().orElseThrow());
         assertFalse(((ConfigValue) result.children().get("debug")).asBool().orElseThrow());
@@ -46,7 +49,7 @@ class TomlParserTest {
                 "host = \"localhost\"",
                 "port = 5432"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection db = (ConfigSection) result.children().get("database");
         assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
@@ -60,7 +63,7 @@ class TomlParserTest {
                 "host = \"localhost\"",
                 "port = 5432"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection database = (ConfigSection) result.children().get("database");
         ConfigSection connection = (ConfigSection) database.children().get("connection");
@@ -70,7 +73,7 @@ class TomlParserTest {
     @Test
     void arrayValue() {
         List<String> lines = List.of("ports = [8080, 8081, 8082]");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigList ports = (ConfigList) result.children().get("ports");
         assertEquals(3, ports.items().size());
@@ -79,7 +82,7 @@ class TomlParserTest {
     @Test
     void floatValue() {
         List<String> lines = List.of("pi = 3.14");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(3.14, ((ConfigValue) result.children().get("pi")).asFloat().orElseThrow(), 0.001);
     }
@@ -90,14 +93,14 @@ class TomlParserTest {
                 "# comment",
                 "key = \"value\""
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
     }
 
     @Test
     void emptyInput() {
-        ConfigSection result = parser.parse(List.of());
+        ConfigSection result = parser.parse(List.of()).section();
         assertTrue(result.children().isEmpty());
     }
 
@@ -109,17 +112,76 @@ class TomlParserTest {
     @Test
     void malformedTomlReturnsEmpty() {
         List<String> lines = List.of("= invalid");
-        ConfigSection result = parser.parse(lines);
+        ParserResult pr = parser.parse(lines);
 
-        assertTrue(result.children().isEmpty());
+        assertTrue(pr.section().children().isEmpty());
+        assertEquals(1, pr.diagnostics().size());
+        assertEquals(DiagnosticLevel.ERROR, pr.diagnostics().get(0).level());
     }
 
     @Test
     void dottedKey() {
         List<String> lines = List.of("database.host = \"localhost\"");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection database = (ConfigSection) result.children().get("database");
         assertEquals("localhost", ((ConfigValue) database.children().get("host")).asString().orElseThrow());
+    }
+
+    @Test
+    void localDateValue() {
+        List<String> lines = List.of("birthday = 2023-12-25");
+        ParserResult pr = parser.parse(lines);
+
+        ConfigValue val = (ConfigValue) pr.section().children().get("birthday");
+        assertEquals(ValueType.DATE, val.type());
+        assertInstanceOf(java.time.LocalDate.class, val.rawValue());
+    }
+
+    @Test
+    void localDateTimeValue() {
+        List<String> lines = List.of("created = 2023-12-25T10:30:00");
+        ParserResult pr = parser.parse(lines);
+
+        ConfigValue val = (ConfigValue) pr.section().children().get("created");
+        assertEquals(ValueType.DATETIME, val.type());
+    }
+
+    @Test
+    void offsetDateTimeValue() {
+        List<String> lines = List.of("timestamp = 2023-12-25T10:30:00+09:00");
+        ParserResult pr = parser.parse(lines);
+
+        ConfigValue val = (ConfigValue) pr.section().children().get("timestamp");
+        assertEquals(ValueType.DATETIME, val.type());
+    }
+
+    @Test
+    void arrayOfTables() {
+        List<String> lines = List.of(
+                "[[servers]]",
+                "host = \"a\"",
+                "port = 1",
+                "",
+                "[[servers]]",
+                "host = \"b\"",
+                "port = 2"
+        );
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigList servers = (ConfigList) result.children().get("servers");
+        assertEquals(2, servers.items().size());
+        ConfigSection first = (ConfigSection) servers.items().get(0);
+        assertEquals("a", ((ConfigValue) first.children().get("host")).asString().orElseThrow());
+    }
+
+    @Test
+    void inlineTable() {
+        List<String> lines = List.of("db = { host = \"localhost\", port = 5432 }");
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigSection db = (ConfigSection) result.children().get("db");
+        assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
+        assertEquals(5432, ((ConfigValue) db.children().get("port")).asInt().orElseThrow());
     }
 }

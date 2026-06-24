@@ -3,6 +3,7 @@ package com.polyconf.parser.parse;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.ParserResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,7 +17,7 @@ class IniParserTest {
     @Test
     void globalKeyValue() {
         List<String> lines = List.of("key=value");
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
         assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
@@ -29,7 +30,7 @@ class IniParserTest {
                 "host=localhost",
                 "port=5432"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigNode db = result.children().get("database");
         assertInstanceOf(ConfigSection.class, db);
@@ -46,7 +47,7 @@ class IniParserTest {
                 "[app]",
                 "name=myapp"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(2, result.children().size());
         ConfigSection db = (ConfigSection) result.children().get("db");
@@ -61,7 +62,7 @@ class IniParserTest {
                 "; comment",
                 "key=value"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
     }
@@ -72,7 +73,7 @@ class IniParserTest {
                 "# comment",
                 "key=value"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
     }
@@ -85,7 +86,7 @@ class IniParserTest {
                 "key=value",
                 ""
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         ConfigSection sec = (ConfigSection) result.children().get("sec");
         assertEquals(1, sec.children().size());
@@ -97,7 +98,7 @@ class IniParserTest {
                 "[ database ]",
                 "key=value"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertNotNull(result.children().get("database"));
     }
@@ -108,14 +109,14 @@ class IniParserTest {
                 "[]",
                 "key=value"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
     }
 
     @Test
     void emptyInput() {
-        ConfigSection result = parser.parse(List.of());
+        ConfigSection result = parser.parse(List.of()).section();
         assertTrue(result.children().isEmpty());
     }
 
@@ -131,9 +132,38 @@ class IniParserTest {
                 "[app]",
                 "name=test"
         );
-        ConfigSection result = parser.parse(lines);
+        ConfigSection result = parser.parse(lines).section();
 
         assertNotNull(result.children().get("version"));
         assertNotNull(result.children().get("app"));
+    }
+
+    @Test
+    void subsectionNesting() {
+        List<String> lines = List.of(
+                "[database.connection]",
+                "host=localhost",
+                "port=5432"
+        );
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigSection database = (ConfigSection) result.children().get("database");
+        ConfigSection connection = (ConfigSection) database.children().get("connection");
+        assertEquals("localhost", ((ConfigValue) connection.children().get("host")).asString().orElseThrow());
+        assertEquals("5432", ((ConfigValue) connection.children().get("port")).asString().orElseThrow());
+    }
+
+    @Test
+    void deepSubsectionNesting() {
+        List<String> lines = List.of(
+                "[a.b.c]",
+                "key=value"
+        );
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigSection a = (ConfigSection) result.children().get("a");
+        ConfigSection b = (ConfigSection) a.children().get("b");
+        ConfigSection c = (ConfigSection) b.children().get("c");
+        assertEquals("value", ((ConfigValue) c.children().get("key")).asString().orElseThrow());
     }
 }
