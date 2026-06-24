@@ -38,6 +38,12 @@ public final class YamlParser implements LenientParser {
                 docList.add(doc);
             }
 
+            // ponytail: reject scalar-only documents (e.g. "key=value" parsed as YAML scalars)
+            boolean hasStructured = docList.stream().anyMatch(d -> d instanceof Map || d instanceof List);
+            if (!hasStructured) {
+                return ParserResult.ok(new ConfigSection("", null, ""));
+            }
+
             if (docList.size() > 1) {
                 for (int i = 0; i < docList.size(); i++) {
                     children.put(String.valueOf(i), convertDocument(String.valueOf(i), docList.get(i)));

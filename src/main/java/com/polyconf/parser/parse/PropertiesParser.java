@@ -1,24 +1,19 @@
 package com.polyconf.parser.parse;
 
-import com.polyconf.parser.model.BlockDiagnostic;
+import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
-import com.polyconf.parser.model.ConfigValue;
-import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.Provenance;
-import com.polyconf.parser.model.ValueType;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import com.polyconf.parser.model.ConfigNode;
+import java.util.Properties;
 
 public final class PropertiesParser implements LenientParser {
-
-    private static final Pattern UNICODE_ESCAPE = Pattern.compile("\\\\u([0-9a-fA-F]{4})");
 
     @Override
     public ParserResult parse(List<String> lines) {
@@ -29,23 +24,31 @@ public final class PropertiesParser implements LenientParser {
         List<String> joined = joinContinuations(lines);
 
         Map<String, ConfigNode> children = new LinkedHashMap<>();
-
         for (int i = 0; i < joined.size(); i++) {
             String raw = joined.get(i);
             String trimmed = raw.strip();
 
-            if (trimmed.isEmpty() || isComment(trimmed)) {
+            if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("!")) {
+                continue;
+            }
+            // Lines without a separator are skipped (java.util.Properties would treat them as key with empty value)
+            if (!trimmed.contains("=") && !trimmed.contains(":")) {
                 continue;
             }
 
-            int sepIdx = findSeparator(trimmed);
-            if (sepIdx < 0) {
+            // Use java.util.Properties for key=value parsing (unicode escapes, separators)
+            Properties props = new Properties();
+            try {
+                props.load(new StringReader(trimmed));
+            } catch (IOException e) {
+                continue; // StringReader never throws IOException
+            }
+            if (props.isEmpty()) {
                 continue;
             }
 
-            String key = trimmed.substring(0, sepIdx).strip();
-            String value = decodeUnicode(trimmed.substring(sepIdx + 1).strip());
-
+            String key = props.stringPropertyNames().iterator().next();
+            String value = props.getProperty(key);
             if (key.isEmpty()) {
                 continue;
             }
@@ -56,6 +59,8 @@ public final class PropertiesParser implements LenientParser {
         return ParserResult.ok(new ConfigSection("", children, null, ""));
     }
 
+    // keep our continuation joining -- java.util.Properties strips leading whitespace
+    // on continuation lines, but our tests expect it preserved (e.g. "Hello \\\n  World" -> "Hello   World")
     private static List<String> joinContinuations(List<String> lines) {
         List<String> result = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -72,17 +77,6 @@ public final class PropertiesParser implements LenientParser {
             result.add(current.toString());
         }
         return result;
-    }
-
-    static String decodeUnicode(String value) {
-        Matcher m = UNICODE_ESCAPE.matcher(value);
-        StringBuilder sb = new StringBuilder();
-        while (m.find()) {
-            int codePoint = Integer.parseInt(m.group(1), 16);
-            m.appendReplacement(sb, String.valueOf((char) codePoint));
-        }
-        m.appendTail(sb);
-        return sb.toString();
     }
 
     static void putNested(Map<String, ConfigNode> root, String key, String value, int line, String raw) {
@@ -105,24 +99,5 @@ public final class PropertiesParser implements LenientParser {
                 value,
                 new Provenance(line, null, raw, 1.0)
         ));
-    }
-
-    private static boolean isComment(String line) {
-        return line.startsWith("#") || line.startsWith("!");
-    }
-
-    private static int findSeparator(String line) {
-        int eqIdx = line.indexOf('=');
-        int colonIdx = line.indexOf(':');
-        if (eqIdx < 0 && colonIdx < 0) {
-            return -1;
-        }
-        if (eqIdx < 0) {
-            return colonIdx;
-        }
-        if (colonIdx < 0) {
-            return eqIdx;
-        }
-        return Math.min(eqIdx, colonIdx);
     }
 }

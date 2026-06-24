@@ -53,6 +53,15 @@ public final class JsonParser implements LenientParser {
             );
         }
 
+        // ponytail: reject lenient-mode false positives (e.g. TOML [section] parsed as JSON array ["section"])
+        if (root.isJsonArray()) {
+            JsonArray arr = root.getAsJsonArray();
+            if (arr.size() == 1 && arr.get(0).isJsonPrimitive() && arr.get(0).getAsJsonPrimitive().isString()
+                    && !text.strip().startsWith("[\"")) {
+                return ParserResult.ok(new ConfigSection("", null, ""));
+            }
+        }
+
         Map<String, ConfigNode> children = new LinkedHashMap<>();
         if (root.isJsonObject()) {
             for (Map.Entry<String, JsonElement> entry : root.getAsJsonObject().entrySet()) {

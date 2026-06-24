@@ -135,7 +135,10 @@ public final class KdlParser implements LenientParser {
 
         // Node name (identifier or quoted string)
         String name = parseIdentifier(pos);
-        if (name == null) return;
+        if (name == null || name.isEmpty()) {
+            skipRest(pos);
+            return;
+        }
 
         pos.skipWs();
 

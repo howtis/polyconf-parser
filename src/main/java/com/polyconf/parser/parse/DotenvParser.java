@@ -102,7 +102,7 @@ public final class DotenvParser implements LenientParser {
             String refName = m.group(1) != null ? m.group(1) : m.group(2);
             String refValue = rawValues.get(refName);
             if (refValue != null) {
-                String resolvedRef = resolve(key, refValue, rawValues, new ArrayList<>(visited), diagnostics);
+                String resolvedRef = resolve(refName, refValue, rawValues, new ArrayList<>(visited), diagnostics);
                 m.appendReplacement(sb, Matcher.quoteReplacement(resolvedRef));
             } else {
                 diagnostics.add(new BlockDiagnostic(0, 0,
