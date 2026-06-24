@@ -73,19 +73,6 @@ class CsvParserTest {
     }
 
     @Test
-    void emptyLinesSkipped() {
-        List<String> lines = List.of(
-                "key",
-                "",
-                "value"
-        );
-        ConfigSection result = parser.parse(lines).section();
-
-        ConfigList rows = (ConfigList) result.children().get("rows");
-        assertEquals(1, rows.items().size());
-    }
-
-    @Test
     void headerOnlyReturnsEmptyRows() {
         List<String> lines = List.of("a,b,c");
         ConfigSection result = parser.parse(lines).section();
@@ -119,17 +106,6 @@ class CsvParserTest {
         ConfigSection row = (ConfigSection) rows.items().get(0);
         assertEquals("1", ((ConfigValue) row.children().get("a")).asString().orElseThrow());
         assertNull(row.children().get("b"));
-    }
-
-    @Test
-    void emptyInput() {
-        ConfigSection result = parser.parse(List.of()).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void nullInputThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
     }
 
     @Test

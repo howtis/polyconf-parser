@@ -1,7 +1,6 @@
 package com.polyconf.parser.parse;
 
 import com.polyconf.parser.model.ConfigList;
-import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.DiagnosticLevel;

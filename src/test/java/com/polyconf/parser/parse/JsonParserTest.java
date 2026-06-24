@@ -4,7 +4,6 @@ import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
-import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import org.junit.jupiter.api.Test;
 

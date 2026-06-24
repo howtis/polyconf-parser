@@ -3,7 +3,6 @@ package com.polyconf.parser.parse;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
-import com.polyconf.parser.model.ParserResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
