@@ -14,6 +14,7 @@ obsidian vault="polyconf-parser" read path="preferences.md"
 ### During Session
 
 - All documentation must be managed within Obsidian. Do not leave any documentation within the project.
+- Write all documentation within english.
 
 - **Decision made** → create `Decisions/{title}.md`
 - **Task completed/created** → update `Tasks/active.md`

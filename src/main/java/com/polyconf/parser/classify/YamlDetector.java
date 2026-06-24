@@ -7,10 +7,21 @@ public final class YamlDetector extends FormatDetector {
         if (t.equals("---") || t.equals("...")) {
             score += 5;
         }
+        if (t.startsWith("{") || t.startsWith("[")) {
+            score -= 2;
+        }
+        if (t.startsWith("}") || t.startsWith("]")) {
+            score -= 2;
+        }
         if (t.contains(":") && !t.contains("=") && !t.startsWith("[")
                 && !t.startsWith("<") && !t.startsWith("{")) {
             boolean dottedKey = hasDotBeforeColon(t);
-            score += dottedKey ? 2 : 3;
+            int base = dottedKey ? 2 : 3;
+            char first = firstNonWhitespace(t);
+            if (first == '"' || first == '\'') {
+                base = Math.max(1, base - 2);
+            }
+            score += base;
         }
         return score;
     }
