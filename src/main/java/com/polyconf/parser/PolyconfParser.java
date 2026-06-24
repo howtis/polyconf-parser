@@ -46,6 +46,14 @@ public final class PolyconfParser {
             Map.entry(Format.CSV, new CsvParser())
     );
 
+    /**
+     * Fallback parser used when no format is detected or the detected format's
+     * parser produces an empty section. PropertiesParser is the most lenient
+     * key=value extractor - it finds any '=' or ':' separator regardless of
+     * surrounding whitespace.
+     */
+    private static final LenientParser FALLBACK_PARSER = new PropertiesParser();
+
     private final ConfigMerger merger;
 
     public PolyconfParser() {
@@ -134,8 +142,9 @@ public final class PolyconfParser {
                 .collect(Collectors.toList());
 
         if (ranked.isEmpty()) {
-            ConfigSection empty = new ConfigSection("", null, "");
-            return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.0, false, empty);
+            ParserResult fallbackResult = FALLBACK_PARSER.parse(blockLines);
+            diagnostics.addAll(fallbackResult.diagnostics());
+            return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.0, false, fallbackResult.section());
         }
 
         Format primary = ranked.get(0).getKey();
@@ -147,7 +156,15 @@ public final class PolyconfParser {
             LenientParser parser = parserFor(primary);
             ParserResult pr = parser.parse(blockLines);
             diagnostics.addAll(pr.diagnostics());
-            return new BlockResult(startLine, endLine, primary, confidence, false, pr.section());
+            ConfigSection section = pr.section();
+            if (section.children().isEmpty()) {
+                ParserResult fallbackResult = FALLBACK_PARSER.parse(blockLines);
+                if (!fallbackResult.section().children().isEmpty()) {
+                    diagnostics.addAll(fallbackResult.diagnostics());
+                    return new BlockResult(startLine, endLine, primary, confidence, false, fallbackResult.section());
+                }
+            }
+            return new BlockResult(startLine, endLine, primary, confidence, false, section);
         }
 
         return processAmbiguousBlock(blockLines, ranked, startLine, endLine, diagnostics);

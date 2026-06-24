@@ -296,4 +296,55 @@ class PolyconfParserTest {
     void parseStringNullPolicyThrows() {
         assertThrows(IllegalArgumentException.class, () -> parser.parse("key=value", null));
     }
+
+    // --- fallback extraction tests: format detection failure still yields key-value ---
+
+    @Test
+    void asymmetricSpaceBeforeEquals_fallbackExtracts() {
+        // "key =value": all detectors score 0 -> fallback PropertiesParser extracts it
+        ParseResult result = parser.parse(List.of("key =value"));
+
+        assertEquals(1, result.blocks().size());
+        assertEquals(Format.UNKNOWN, result.blocks().get(0).detectedFormat());
+        assertEquals(0.0, result.blocks().get(0).confidence());
+        assertEquals("value", result.flattened().get("key"));
+    }
+
+    @Test
+    void asymmetricSpaceAfterEquals_fallbackExtracts() {
+        // "key= value": all detectors score 0 -> fallback PropertiesParser extracts it
+        ParseResult result = parser.parse(List.of("key= value"));
+
+        assertEquals(1, result.blocks().size());
+        assertEquals(Format.UNKNOWN, result.blocks().get(0).detectedFormat());
+        assertEquals(0.0, result.blocks().get(0).confidence());
+        assertEquals("value", result.flattened().get("key"));
+    }
+
+    @Test
+    void symmetricSpaceEquals_tomlFails_fallbackExtracts() {
+        // "key = value": TOML scores 3 but tomlj rejects bare word value
+        // -> fallback PropertiesParser extracts it
+        ParseResult result = parser.parse(List.of("key = value"));
+
+        assertEquals(1, result.blocks().size());
+        assertEquals(Format.TOML, result.blocks().get(0).detectedFormat());
+        assertEquals("value", result.flattened().get("key"));
+    }
+
+    @Test
+    void emptyLinesWithFallback_noFalsePositive() {
+        ParseResult result = parser.parse(List.of("", "   "));
+
+        assertEquals(0, result.blocks().size());
+        assertTrue(result.flattened().isEmpty());
+    }
+
+    @Test
+    void commentsOnlyWithFallback_noFalsePositive() {
+        ParseResult result = parser.parse(List.of("# just a comment", "! another comment"));
+
+        // comments form a block but fallback parser ignores them -> empty section
+        assertTrue(result.flattened().isEmpty());
+    }
 }
