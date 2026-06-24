@@ -4,6 +4,9 @@ public final class PropertiesDetector extends FormatDetector {
     @Override
     public int score(String t) {
         int score = 0;
+        if (t.startsWith("[") && t.endsWith("]")) {
+            score -= 2;
+        }
         if (isIniStyle(t)) {
             score += 2;
             if (hasDotBeforeEquals(t)) {

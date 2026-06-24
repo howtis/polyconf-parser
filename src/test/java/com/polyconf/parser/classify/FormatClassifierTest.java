@@ -152,4 +152,16 @@ class FormatClassifierTest {
         );
         assertEquals(Format.DOTENV, FormatClassifier.classify(lines));
     }
+
+    @Test
+    void csvRequiresMultipleCommas() {
+        List<String> lines = List.of("a,b");
+        assertNotEquals(Format.CSV, FormatClassifier.classify(lines));
+    }
+
+    @Test
+    void jsonStandaloneLiterals() {
+        List<String> lines = List.of("true");
+        assertEquals(Format.JSON, FormatClassifier.classify(lines));
+    }
 }
