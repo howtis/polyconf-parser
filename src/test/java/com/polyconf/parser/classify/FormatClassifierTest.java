@@ -120,7 +120,7 @@ class FormatClassifierTest {
 
     @Test
     void ambiguousReturnsUnknown() {
-        List<String> lines = List.of("key = value");
+        List<String> lines = List.of("key=value");
         assertEquals(Format.UNKNOWN, FormatClassifier.classify(lines));
     }
 
