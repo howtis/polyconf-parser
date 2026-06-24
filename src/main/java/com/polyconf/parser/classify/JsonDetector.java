@@ -1,58 +1,62 @@
 package com.polyconf.parser.classify;
 
+import java.util.List;
+
 public final class JsonDetector extends FormatDetector {
     @Override
-    public int score(String t) {
+    public int score(List<Token> tokens) {
         int score = 0;
-        if (t.startsWith("{")) {
+        if (tokens.isEmpty()) return score;
+
+        Token first = tokens.get(0);
+
+        if (first.text().equals("{")) {
             score += 5;
-        } else if (t.startsWith("[")) {
-            if (t.contains(":") || t.contains("\"") || t.equals("[")) {
+        } else if (first.text().equals("[")) {
+            boolean hasColonOrQuote = false;
+            for (Token t : tokens) {
+                if (t.text().equals(":") || t.isQuoted()) {
+                    hasColonOrQuote = true;
+                    break;
+                }
+            }
+            if (hasColonOrQuote || tokens.size() == 1) {
                 score += 5;
             }
         }
-        if (t.startsWith("}") || t.startsWith("]")) {
-            score += 3;
-        }
-        if (t.startsWith("\"") && t.contains("\":")) {
-            score += 3;
-        }
-        if (t.equals("true") || t.equals("false") || t.equals("null")) {
-            score += 2;
-        }
-        if (t.startsWith("\"") && t.endsWith("\"") && t.length() >= 2) {
-            score += 2;
-        }
-        if (isNumberLiteral(t)) {
-            score += 1;
-        }
-        return score;
-    }
 
-    private static boolean isNumberLiteral(String t) {
-        if (t.isEmpty()) return false;
-        int i = 0;
-        if (t.charAt(0) == '-' || t.charAt(0) == '+') i++;
-        if (i >= t.length()) return false;
-        boolean hasDigit = false;
-        boolean hasDot = false;
-        boolean hasExp = false;
-        for (; i < t.length(); i++) {
-            char c = t.charAt(i);
-            if (Character.isDigit(c)) {
-                hasDigit = true;
-            } else if (c == '.') {
-                if (hasDot) return false;
-                hasDot = true;
-            } else if (c == 'e' || c == 'E') {
-                if (hasExp) return false;
-                hasExp = true;
-                hasDot = true;
-                if (i + 1 < t.length() && (t.charAt(i + 1) == '+' || t.charAt(i + 1) == '-')) i++;
-            } else {
-                return false;
+        if (first.text().equals("}") || first.text().equals("]")) {
+            score += 3;
+        }
+
+        if (first.isQuoted()) {
+            boolean hasColonAfter = false;
+            for (int i = 1; i < tokens.size(); i++) {
+                if (tokens.get(i).text().equals(":")) {
+                    hasColonAfter = true;
+                    break;
+                }
+            }
+            if (hasColonAfter) {
+                score += 3;
             }
         }
-        return hasDigit;
+
+        if (tokens.size() == 1 && first.kind() == TokenKind.WORD) {
+            String t = first.text();
+            if (t.equals("true") || t.equals("false") || t.equals("null")) {
+                score += 2;
+            }
+        }
+
+        if (tokens.size() == 1 && first.isQuoted()) {
+            score += 2;
+        }
+
+        if (tokens.size() == 1 && first.kind() == TokenKind.WORD && first.isNumberLiteral()) {
+            score += 1;
+        }
+
+        return score;
     }
 }

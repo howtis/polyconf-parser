@@ -1,18 +1,38 @@
 package com.polyconf.parser.classify;
 
+import java.util.List;
+
 public final class DotenvDetector extends FormatDetector {
     @Override
-    public int score(String t) {
+    public int score(List<Token> tokens) {
         int score = 0;
-        if (isIniStyle(t)) {
+        boolean hasIniEquals = false;
+        for (Token t : tokens) {
+            if (t.kind() == TokenKind.DELIMITER && t.text().equals("=")
+                    && !t.spaceBefore() && !t.spaceAfter()) {
+                hasIniEquals = true;
+            }
+        }
+        if (hasIniEquals) {
             score += 1;
         }
-        if (t.contains("=") && Character.isUpperCase(firstNonWhitespace(t))) {
-            score += 2;
-        }
-        if (t.toLowerCase().startsWith("export ")) {
-            score += 4;
+        if (!tokens.isEmpty()) {
+            Token first = tokens.get(0);
+            if (first.kind() == TokenKind.WORD && first.isUppercaseStart()
+                    && hasEqualsAfter(tokens, 0)) {
+                score += 2;
+            }
+            if (first.kind() == TokenKind.WORD && first.text().equalsIgnoreCase("export")) {
+                score += 4;
+            }
         }
         return score;
+    }
+
+    private static boolean hasEqualsAfter(List<Token> tokens, int from) {
+        for (int i = from + 1; i < tokens.size(); i++) {
+            if (tokens.get(i).text().equals("=")) return true;
+        }
+        return false;
     }
 }

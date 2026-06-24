@@ -1,17 +1,35 @@
 package com.polyconf.parser.classify;
 
+import java.util.List;
+
 public final class TomlDetector extends FormatDetector {
     @Override
-    public int score(String t) {
+    public int score(List<Token> tokens) {
         int score = 0;
-        if (t.startsWith("[[") && t.contains("]]")) {
-            score += 5;
+        if (tokens.size() >= 2) {
+            Token first = tokens.get(0);
+            if (first.kind() == TokenKind.DELIMITER && first.text().equals("[[")) {
+                for (int i = 1; i < tokens.size(); i++) {
+                    if (tokens.get(i).text().equals("]]")) {
+                        score += 5;
+                        break;
+                    }
+                }
+            }
+            if (first.kind() == TokenKind.DELIMITER && first.text().equals("[")) {
+                for (int i = 1; i < tokens.size(); i++) {
+                    if (tokens.get(i).text().equals("]")) {
+                        score += 2;
+                        break;
+                    }
+                }
+            }
         }
-        if (t.startsWith("[") && t.contains("]") && !t.startsWith("[[")) {
-            score += 2;
-        }
-        if (isTomlStyle(t)) {
-            score += 3;
+        for (Token t : tokens) {
+            if (t.kind() == TokenKind.DELIMITER && t.text().equals("=")
+                    && t.spaceBefore() && t.spaceAfter()) {
+                score += 3;
+            }
         }
         return score;
     }

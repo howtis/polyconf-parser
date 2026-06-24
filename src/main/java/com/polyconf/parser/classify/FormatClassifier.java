@@ -63,12 +63,13 @@ public final class FormatClassifier {
     }
 
     private static void scoreLine(String t, Map<Format, Integer> scores) {
+        List<Token> tokens = LineTokenizer.tokenize(t);
         for (Format format : Format.registeredFormats()) {
             FormatDetector detector = format.detector().orElse(null);
             if (detector == null) {
                 continue;
             }
-            int s = detector.score(t);
+            int s = detector.score(tokens);
             if (s != 0) {
                 scores.merge(format, s, Integer::sum);
             }
