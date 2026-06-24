@@ -38,6 +38,7 @@ public final class CsvParser implements LenientParser {
 
         List<String> header = null;
         List<ConfigNode> rows = new ArrayList<>();
+        List<BlockDiagnostic> diagnostics = new ArrayList<>();
 
         for (int i = 0; i < lines.size(); i++) {
             String raw = lines.get(i);
@@ -47,7 +48,16 @@ public final class CsvParser implements LenientParser {
                 continue;
             }
 
-            List<String> cells = splitCsv(trimmed, delim);
+            boolean[] hadUnclosedQuote = new boolean[1];
+            List<String> cells = splitCsv(trimmed, delim, hadUnclosedQuote);
+
+            if (hadUnclosedQuote[0]) {
+                diagnostics.add(new BlockDiagnostic(
+                        i, i,
+                        "CSV: unclosed quote in row " + i + " - data may be truncated",
+                        DiagnosticLevel.WARNING
+                ));
+            }
 
             if (header == null) {
                 header = cells;
@@ -65,31 +75,14 @@ public final class CsvParser implements LenientParser {
         }
 
         if (header == null) {
-            return ParserResult.ok(new ConfigSection("", null, ""));
+            return new ParserResult(new ConfigSection("", null, ""), diagnostics);
         }
 
-        return ParserResult.ok(new ConfigSection("", Map.of("rows", new ConfigList("rows", rows, null, "")), null, ""));
+        return new ParserResult(new ConfigSection("", Map.of("rows", new ConfigList("rows", rows, null, "")), null, ""), diagnostics);
     }
 
     private static ConfigValue createValue(String key, String raw, Provenance provenance) {
-        if (raw.isEmpty()) {
-            return new ConfigValue(key, "", ValueType.STRING, provenance, "");
-        }
-        // Boolean
-        if ("true".equalsIgnoreCase(raw) || "false".equalsIgnoreCase(raw)) {
-            return new ConfigValue(key, Boolean.parseBoolean(raw), ValueType.BOOLEAN, provenance, "");
-        }
-        // Integer
-        try {
-            return new ConfigValue(key, Long.parseLong(raw), ValueType.INTEGER, provenance, "");
-        } catch (NumberFormatException ignored) {
-        }
-        // Float
-        try {
-            return new ConfigValue(key, Double.parseDouble(raw), ValueType.FLOAT, provenance, "");
-        } catch (NumberFormatException ignored) {
-        }
-        return new ConfigValue(key, raw, ValueType.STRING, provenance, "");
+        return ValueInference.createValue(key, raw, provenance);
     }
 
     static char detectDelimiter(List<String> lines) {
@@ -117,7 +110,7 @@ public final class CsvParser implements LenientParser {
         return counts[bestIdx] > 0 ? DELIMITER_CANDIDATES[bestIdx] : ',';
     }
 
-    static List<String> splitCsv(String line, char delim) {
+    static List<String> splitCsv(String line, char delim, boolean[] hadUnclosedQuote) {
         List<String> cells = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
@@ -147,6 +140,10 @@ public final class CsvParser implements LenientParser {
             }
         }
         cells.add(current.toString().strip());
+
+        if (inQuotes) {
+            hadUnclosedQuote[0] = true;
+        }
 
         return cells;
     }

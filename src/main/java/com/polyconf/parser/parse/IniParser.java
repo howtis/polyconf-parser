@@ -60,12 +60,10 @@ public final class IniParser implements LenientParser {
                 continue;
             }
 
-            current.put(key, new ConfigValue(
+            current.put(key, ValueInference.createValue(
                     key,
                     value,
-                    ValueType.STRING,
-                    new Provenance(i, null, raw, 1.0),
-                    ""
+                    new Provenance(i, null, raw, 1.0)
             ));
         }
 

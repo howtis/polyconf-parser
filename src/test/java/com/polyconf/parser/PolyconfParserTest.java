@@ -189,7 +189,7 @@ class PolyconfParserTest {
         assertFalse(result.hasWarnings());
         assertEquals(1, result.blocks().size());
         assertEquals("value", result.flattened().get("key"));
-        assertEquals("10", result.flattened().get("count"));
+        assertEquals(10L, result.flattened().get("count"));
     }
 
     @Test

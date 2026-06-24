@@ -41,8 +41,9 @@ class CrossFormatEquivalenceTest {
         Map<String, Object> props = parser.parse("# @fmt:properties\nserver.host=localhost\nserver.port=5432\nserver.enabled=true\n").flattened();
 
         assertEquals(toml.size(), props.size());
+        // After shared type inference, Properties produces same types as TOML
         toml.forEach((key, value) ->
-                assertEquals(String.valueOf(value), String.valueOf(props.get(key)), "Mismatch on key: " + key));
+                assertEquals(value, props.get(key), "Mismatch on key: " + key));
     }
 
     @Test
@@ -51,8 +52,9 @@ class CrossFormatEquivalenceTest {
         Map<String, Object> ini = parser.parse("# @fmt:ini\n[server]\nhost=localhost\nport=5432\nenabled=true\n").flattened();
 
         assertEquals(toml.size(), ini.size());
+        // After shared type inference, INI produces same types as TOML
         toml.forEach((key, value) ->
-                assertEquals(String.valueOf(value), String.valueOf(ini.get(key)), "Mismatch on key: " + key));
+                assertEquals(value, ini.get(key), "Mismatch on key: " + key));
     }
 
     // --- Multi-block: mixed formats in same input ---
@@ -89,20 +91,27 @@ class CrossFormatEquivalenceTest {
         assertEquals(3, propsMap.size());
         assertEquals(3, iniMap.size());
 
-        // Values may differ in Java type (String vs Long) but string-form must match
+        // String values match across all formats
         assertEquals(String.valueOf(tomlMap.get("database.host")), String.valueOf(yamlMap.get("database.host")));
         assertEquals(String.valueOf(tomlMap.get("database.host")), String.valueOf(jsonMap.get("database.host")));
         assertEquals(String.valueOf(tomlMap.get("database.host")), String.valueOf(propsMap.get("database.host")));
         assertEquals(String.valueOf(tomlMap.get("database.host")), String.valueOf(iniMap.get("database.host")));
 
+        // Numeric values match across all formats - Properties and INI now infer Long via shared ValueInference
+        assertEquals(tomlMap.get("database.port"), propsMap.get("database.port"));
+        assertEquals(tomlMap.get("database.port"), iniMap.get("database.port"));
+        assertEquals(tomlMap.get("database.port"), jsonMap.get("database.port"));
         assertEquals(String.valueOf(tomlMap.get("database.port")), String.valueOf(yamlMap.get("database.port")));
-        assertEquals(String.valueOf(tomlMap.get("database.port")), String.valueOf(jsonMap.get("database.port")));
-        assertEquals(String.valueOf(tomlMap.get("database.port")), String.valueOf(propsMap.get("database.port")));
-        assertEquals(String.valueOf(tomlMap.get("database.port")), String.valueOf(iniMap.get("database.port")));
 
+        assertEquals(tomlMap.get("database.max_pool"), propsMap.get("database.max_pool"));
+        assertEquals(tomlMap.get("database.max_pool"), iniMap.get("database.max_pool"));
+        assertEquals(tomlMap.get("database.max_pool"), jsonMap.get("database.max_pool"));
         assertEquals(String.valueOf(tomlMap.get("database.max_pool")), String.valueOf(yamlMap.get("database.max_pool")));
-        assertEquals(String.valueOf(tomlMap.get("database.max_pool")), String.valueOf(jsonMap.get("database.max_pool")));
-        assertEquals(String.valueOf(tomlMap.get("database.max_pool")), String.valueOf(propsMap.get("database.max_pool")));
-        assertEquals(String.valueOf(tomlMap.get("database.max_pool")), String.valueOf(iniMap.get("database.max_pool")));
+
+        // Verify Properties and INI now produce numeric types, not strings
+        assertInstanceOf(Long.class, propsMap.get("database.port"));
+        assertInstanceOf(Long.class, iniMap.get("database.port"));
+        assertInstanceOf(Long.class, propsMap.get("database.max_pool"));
+        assertInstanceOf(Long.class, iniMap.get("database.max_pool"));
     }
 }

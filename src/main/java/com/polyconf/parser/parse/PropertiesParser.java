@@ -100,12 +100,10 @@ public final class PropertiesParser implements LenientParser {
             }
         }
         String leafKey = parts[parts.length - 1];
-        current.put(leafKey, new ConfigValue(
+        current.put(leafKey, ValueInference.createValue(
                 leafKey,
                 value,
-                ValueType.STRING,
-                new Provenance(line, null, raw, 1.0),
-                ""
+                new Provenance(line, null, raw, 1.0)
         ));
     }
 

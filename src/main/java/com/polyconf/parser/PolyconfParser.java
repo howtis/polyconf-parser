@@ -192,12 +192,15 @@ public final class PolyconfParser {
         ResultDivergence.Level divergence = ResultDivergence.compare(section1, section2);
 
         if (divergence != ResultDivergence.Level.IDENTICAL) {
+            DiagnosticLevel level = divergence == ResultDivergence.Level.TYPE_ONLY
+                    ? DiagnosticLevel.WARNING
+                    : DiagnosticLevel.ERROR;
             diagnostics.add(new BlockDiagnostic(
                     startLine, endLine,
                     "Ambiguous format ("
                             + primary.name() + " vs " + secondary.name()
                             + "): divergence=" + divergence.name().toLowerCase(),
-                    DiagnosticLevel.ERROR));
+                    level));
         }
 
         return new BlockResult(startLine, endLine, primary, confidence, false, section1);

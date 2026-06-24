@@ -76,12 +76,10 @@ public final class DotenvParser implements LenientParser {
         Map<String, ConfigNode> children = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : rawValues.entrySet()) {
             String resolved = resolve(entry.getKey(), entry.getValue(), rawValues, new ArrayList<>(), diagnostics);
-            children.put(entry.getKey(), new ConfigValue(
+            children.put(entry.getKey(), ValueInference.createValue(
                     entry.getKey(),
                     resolved,
-                    ValueType.STRING,
-                    new Provenance(0, null, "", 1.0),
-                    ""
+                    new Provenance(0, null, "", 1.0)
             ));
         }
 
