@@ -110,4 +110,36 @@ class XmlParserTest {
         assertEquals("text", ((ConfigValue) parent.children().get("#text")).asString().orElseThrow());
         assertNotNull(parent.children().get("child"));
     }
+
+    @Test
+    void selfClosingTagsFormEmptySections() {
+        List<String> lines = List.of("<root><empty/></root>");
+        ConfigSection result = parser.parse(lines).section();
+
+        ConfigSection root = (ConfigSection) result.children().get("root");
+        ConfigNode empty = root.children().get("empty");
+        assertNotNull(empty);
+        assertInstanceOf(ConfigSection.class, empty);
+    }
+
+    @Test
+    void processingInstructionIgnored() {
+        // XML declaration and PI should be ignored
+        List<String> lines = List.of(
+                "<?xml version=\"1.0\"?>",
+                "<root><key>value</key></root>"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        assertNotNull(result.children().get("root"));
+    }
+
+    @Test
+    void commentIgnored() {
+        List<String> lines = List.of(
+                "<!-- config file -->",
+                "<root><key>value</key></root>"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        assertNotNull(result.children().get("root"));
+    }
 }

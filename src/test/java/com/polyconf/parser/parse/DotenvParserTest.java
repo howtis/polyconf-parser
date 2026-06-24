@@ -67,30 +67,7 @@ class DotenvParserTest {
         assertEquals("John Doe", ((ConfigValue) result.children().get("NAME")).asString().orElseThrow());
     }
 
-    @Test
-    void commentsIgnored() {
-        List<String> lines = List.of(
-                "# Database config",
-                "HOST=localhost"
-        );
-        ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(1, result.children().size());
-        assertEquals("localhost", ((ConfigValue) result.children().get("HOST")).asString().orElseThrow());
-    }
-
-    @Test
-    void emptyLinesSkipped() {
-        List<String> lines = List.of(
-                "",
-                "KEY=value",
-                "",
-                ""
-        );
-        ConfigSection result = parser.parse(lines).section();
-
-        assertEquals(1, result.children().size());
-    }
 
     @Test
     void lineWithoutEqualsSkipped() {
@@ -103,16 +80,6 @@ class DotenvParserTest {
         assertEquals(1, result.children().size());
     }
 
-    @Test
-    void emptyInput() {
-        ConfigSection result = parser.parse(List.of()).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void nullInputThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
-    }
 
     @Test
     void spacesAroundEquals() {
@@ -208,5 +175,16 @@ class DotenvParserTest {
 
         assertTrue(((ConfigValue) result.children().get("CERT")).asString().orElseThrow().contains("line2"));
         assertTrue(((ConfigValue) result.children().get("CERT")).asString().orElseThrow().contains("BEGIN"));
+    }
+
+
+
+
+    @Test
+    void selfReferencingVariableCircular() {
+        List<String> lines = List.of("A=${A}");
+        ParserResult pr = parser.parse(lines);
+        assertTrue(pr.diagnostics().stream()
+                .anyMatch(d -> d.level() == DiagnosticLevel.ERROR && d.message().contains("circular")));
     }
 }

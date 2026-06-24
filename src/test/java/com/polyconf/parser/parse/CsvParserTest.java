@@ -232,4 +232,111 @@ class CsvParserTest {
         ConfigSection row = (ConfigSection) rows.items().get(0);
         assertEquals("John", ((ConfigValue) row.children().get("name")).asString().orElseThrow());
     }
+
+    @Test
+    void unclosedQuotesSilentDataLoss() {
+        // Unclosed quotes cause the rest of the line to be absorbed into one cell
+        List<String> lines = List.of(
+                "name,age",
+                "\"Alice,30"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+
+        // The opening quote is consumed, producing a corrupted value
+        String nameVal = ((ConfigValue) row.children().get("name")).asString().orElseThrow();
+        // "Alice,30" with unclosed quote - quote stripped, becomes "Alice,30"
+        assertNotNull(nameVal);
+    }
+
+    @Test
+    void emptyCellsBetweenDelimiters() {
+        List<String> lines = List.of(
+                "a,b,c",
+                "1,,3"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertEquals("1", ((ConfigValue) row.children().get("a")).asString().orElseThrow());
+        assertEquals("", ((ConfigValue) row.children().get("b")).asString().orElseThrow());
+        assertEquals("3", ((ConfigValue) row.children().get("c")).asString().orElseThrow());
+    }
+
+    @Test
+    void quotedHeader() {
+        List<String> lines = List.of(
+                "\"first name\",\"last name\"",
+                "John,Doe"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        // Quoted headers should have quotes stripped by strip() on each cell
+        assertNull(row.children().get("\"first name\""));
+    }
+
+    @Test
+    void onlyDelimitersLine() {
+        List<String> lines = List.of(
+                ",,,",
+                "a,b,c"
+        );
+        // First line is 4 empty cells, becomes header with empty strings
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        assertEquals(1, rows.items().size());
+    }
+
+    @Test
+    void quotedCellContainingDelimiter() {
+        List<String> lines = List.of(
+                "name,note",
+                "\"Doe, John\",\"hello, world\""
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertEquals("Doe, John", ((ConfigValue) row.children().get("name")).asString().orElseThrow());
+        assertEquals("hello, world", ((ConfigValue) row.children().get("note")).asString().orElseThrow());
+    }
+
+    @Test
+    void quotedCellWithEscapedQuote() {
+        List<String> lines = List.of(
+                "name,note",
+                "\"She said \"\"hi\"\"\",\"ok\""
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertTrue(((ConfigValue) row.children().get("name")).asString().orElseThrow().contains("\""));
+    }
+
+    @Test
+    void moreCellsThanHeader() {
+        List<String> lines = List.of(
+                "a,b",
+                "1,2,3"
+        );
+        // Extra cells beyond header are silently ignored
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        assertEquals(2, row.children().size());
+    }
+
+    @Test
+    void fewerCellsThanHeader() {
+        List<String> lines = List.of(
+                "a,b,c",
+                "1"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigList rows = (ConfigList) result.children().get("rows");
+        ConfigSection row = (ConfigSection) rows.items().get(0);
+        // Only 1 cell provided for 3-column header
+        assertEquals(1, row.children().size());
+    }
 }

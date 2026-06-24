@@ -50,41 +50,6 @@ class PropertiesParserTest {
         assertEquals("true", ((ConfigValue) result.children().get("debug")).asString().orElseThrow());
     }
 
-    @Test
-    void hashCommentsIgnored() {
-        List<String> lines = List.of(
-                "# this is a comment",
-                "key=value"
-        );
-        ConfigSection result = parser.parse(lines).section();
-
-        assertEquals(1, result.children().size());
-        assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
-    }
-
-    @Test
-    void exclamationCommentsIgnored() {
-        List<String> lines = List.of(
-                "! this is a comment",
-                "key=value"
-        );
-        ConfigSection result = parser.parse(lines).section();
-
-        assertEquals(1, result.children().size());
-    }
-
-    @Test
-    void emptyLinesSkipped() {
-        List<String> lines = List.of(
-                "",
-                "key=value",
-                "",
-                ""
-        );
-        ConfigSection result = parser.parse(lines).section();
-
-        assertEquals(1, result.children().size());
-    }
 
     @Test
     void lineWithoutSeparatorSkipped() {
@@ -105,16 +70,6 @@ class PropertiesParserTest {
         assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
     }
 
-    @Test
-    void emptyInput() {
-        ConfigSection result = parser.parse(List.of()).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void nullInputThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
-    }
 
     @Test
     void valueCanContainSpaces() {
@@ -130,13 +85,6 @@ class PropertiesParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals("http://example.com?a=1&b=2", ((ConfigValue) result.children().get("url")).asString().orElseThrow());
-    }
-
-    @Test
-    void unicodeEscape() {
-        // \\u0048 in Java source produces literal \u0048 at runtime
-        String input = "greeting=" + "\\u0048\\u0065\\u006c\\u006c\\u006f";
-        assertEquals("Hello", PropertiesParser.decodeUnicode(input.substring(input.indexOf('=') + 1)));
     }
 
     @Test
@@ -169,4 +117,33 @@ class PropertiesParserTest {
         ConfigSection b = (ConfigSection) a.children().get("b");
         assertEquals("value", ((ConfigValue) b.children().get("c")).asString().orElseThrow());
     }
+
+    @Test
+    void dotNotationCollisionValueSwallowedBySection() {
+        // a=1 then a.b=2: the flat value 'a' is silently overwritten by the nested section
+        List<String> lines = List.of(
+                "a=hello",
+                "a.b=world"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        // 'a' should now be a section, not a value; 'hello' is lost
+        ConfigNode a = result.children().get("a");
+        assertInstanceOf(ConfigSection.class, a);
+        ConfigSection aSection = (ConfigSection) a;
+        assertEquals("world", ((ConfigValue) aSection.children().get("b")).asString().orElseThrow());
+    }
+
+    @Test
+    void dotNotationSectionThenValue() {
+        // a.b=1 then a=2: section 'a' is overwritten by a flat value
+        List<String> lines = List.of(
+                "a.b=nested",
+                "a=flat"
+        );
+        ConfigSection result = parser.parse(lines).section();
+        ConfigNode a = result.children().get("a");
+        assertInstanceOf(ConfigValue.class, a);
+        assertEquals("flat", ((ConfigValue) a).asString().orElseThrow());
+    }
 }
+

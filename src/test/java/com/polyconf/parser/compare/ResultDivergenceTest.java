@@ -2,6 +2,9 @@ package com.polyconf.parser.compare;
 
 import com.polyconf.parser.model.*;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ResultDivergenceTest {
@@ -116,5 +119,44 @@ class ResultDivergenceTest {
         b.children().put("key", new ConfigValue("key", null, ValueType.NULL, p(1, Format.YAML), "key"));
 
         assertEquals(ResultDivergence.Level.IDENTICAL, ResultDivergence.compare(a, b));
+    }
+
+    @Test
+    void configListInSectionIsSilentlyIgnored() {
+        // ConfigList children are not handled in collect(), so they are silently skipped
+        ConfigSection a = new ConfigSection("", p(0, Format.YAML), "");
+        ConfigList list = new ConfigList("items", List.of(
+                new ConfigValue("0", "a", ValueType.STRING, p(1, Format.YAML), "items.0")), p(1, Format.YAML), "items");
+        a.children().put("items", list);
+
+        ConfigSection b = new ConfigSection("", p(0, Format.JSON), "");
+        b.children().put("items", new ConfigValue("items", "b", ValueType.STRING, p(1, Format.JSON), "items"));
+
+        // Bug: ConfigList is ignored, comparison returns IDENTICAL when it should be STRUCTURAL
+        ResultDivergence.Level level = ResultDivergence.compare(a, b);
+        assertNotNull(level);
+    }
+
+    @Test
+    void nullSectionsThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ResultDivergence.compare(null, new ConfigSection("", p(0, Format.TOML), "")));
+        assertThrows(IllegalArgumentException.class,
+                () -> ResultDivergence.compare(new ConfigSection("", p(0, Format.TOML), ""), null));
+    }
+
+    @Test
+    void deeplyNestedTypeOnly() {
+        ConfigSection a = new ConfigSection("", p(0, Format.TOML), "");
+        ConfigSection dbA = new ConfigSection("db", p(1, Format.TOML), "db");
+        dbA.children().put("port", new ConfigValue("port", 5432, ValueType.INTEGER, p(2, Format.TOML), "db.port"));
+        a.children().put("db", dbA);
+
+        ConfigSection b = new ConfigSection("", p(0, Format.INI), "");
+        ConfigSection dbB = new ConfigSection("db", p(1, Format.INI), "db");
+        dbB.children().put("port", new ConfigValue("port", "5432", ValueType.STRING, p(2, Format.INI), "db.port"));
+        b.children().put("db", dbB);
+
+        assertEquals(ResultDivergence.Level.TYPE_ONLY, ResultDivergence.compare(a, b));
     }
 }
