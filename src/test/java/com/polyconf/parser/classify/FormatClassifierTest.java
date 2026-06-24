@@ -78,6 +78,17 @@ class FormatClassifierTest {
     }
 
     @Test
+    void detectsKdl() {
+        List<String> lines = List.of(
+                "server {",
+                "  host \"localhost\"",
+                "  port 8080",
+                "}"
+        );
+        assertEquals(Format.KDL, FormatClassifier.classify(lines));
+    }
+
+    @Test
     void ambiguousReturnsUnknown() {
         List<String> lines = List.of("key=value");
         assertEquals(Format.UNKNOWN, FormatClassifier.classify(lines));

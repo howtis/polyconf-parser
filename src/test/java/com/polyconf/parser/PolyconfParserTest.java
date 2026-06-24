@@ -283,4 +283,36 @@ class PolyconfParserTest {
     void parseStringNullPolicyThrows() {
         assertThrows(IllegalArgumentException.class, () -> parser.parse("key=value", null));
     }
+
+    @Test
+    void singleKdlBlock() {
+        List<String> lines = List.of(
+                "server {",
+                "  host \"localhost\"",
+                "  port 8080",
+                "}"
+        );
+
+        ParseResult result = parser.parse(lines);
+
+        assertEquals(1, result.blocks().size());
+        assertEquals(Format.KDL, result.blocks().get(0).detectedFormat());
+        assertFalse(result.hasErrors());
+    }
+
+    @Test
+    void kdlWithHint() {
+        List<String> lines = List.of(
+                "# @fmt:kdl",
+                "server {",
+                "  host \"localhost\"",
+                "}"
+        );
+
+        ParseResult result = parser.parse(lines);
+
+        assertEquals(1, result.blocks().size());
+        assertEquals(Format.KDL, result.blocks().get(0).detectedFormat());
+        assertTrue(result.blocks().get(0).hinted());
+    }
 }

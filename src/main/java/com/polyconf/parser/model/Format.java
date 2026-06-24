@@ -6,6 +6,7 @@ import com.polyconf.parser.classify.HoconDetector;
 import com.polyconf.parser.classify.IniDetector;
 import com.polyconf.parser.classify.Json5Detector;
 import com.polyconf.parser.classify.JsonDetector;
+import com.polyconf.parser.classify.KdlDetector;
 import com.polyconf.parser.classify.PropertiesDetector;
 import com.polyconf.parser.classify.TomlDetector;
 import com.polyconf.parser.classify.XmlDetector;
@@ -64,6 +65,7 @@ public final class Format {
     public static final Format XML = register("XML", new XmlDetector());
     public static final Format HOCON = register("HOCON", new HoconDetector());
     public static final Format JSON5 = register("JSON5", new Json5Detector());
+    public static final Format KDL = register("KDL", new KdlDetector());
 
     @Override
     public boolean equals(Object o) {

@@ -19,6 +19,7 @@ import com.polyconf.parser.parse.HoconParser;
 import com.polyconf.parser.parse.IniParser;
 import com.polyconf.parser.parse.Json5Parser;
 import com.polyconf.parser.parse.JsonParser;
+import com.polyconf.parser.parse.KdlParser;
 import com.polyconf.parser.parse.LenientParser;
 import com.polyconf.parser.parse.PropertiesParser;
 import com.polyconf.parser.parse.TomlParser;
@@ -45,7 +46,8 @@ public final class PolyconfParser {
             Map.entry(Format.DOTENV, new DotenvParser()),
             Map.entry(Format.XML, new XmlParser()),
             Map.entry(Format.HOCON, new HoconParser()),
-            Map.entry(Format.JSON5, new Json5Parser())
+            Map.entry(Format.JSON5, new Json5Parser()),
+            Map.entry(Format.KDL, new KdlParser())
     );
 
     /**
