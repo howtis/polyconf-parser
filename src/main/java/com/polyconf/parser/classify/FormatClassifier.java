@@ -16,21 +16,7 @@ public final class FormatClassifier {
     }
 
     public static Format classify(List<String> lines) {
-        if (lines == null) {
-            throw new IllegalArgumentException("lines must not be null");
-        }
-        if (lines.isEmpty()) {
-            return Format.UNKNOWN;
-        }
-
-        Map<Format, Integer> scores = new LinkedHashMap<>();
-        for (String line : lines) {
-            String t = line.strip();
-            if (t.isEmpty() || HINT_LINE.matcher(line).matches()) {
-                continue;
-            }
-            scoreLine(t, scores);
-        }
+        Map<Format, Integer> scores = scoreMap(lines);
 
         Format bestFormat = null;
         int bestScore = 0;
@@ -55,6 +41,25 @@ public final class FormatClassifier {
             return Format.UNKNOWN;
         }
         return bestFormat;
+    }
+
+    public static Map<Format, Integer> scoreMap(List<String> lines) {
+        if (lines == null) {
+            throw new IllegalArgumentException("lines must not be null");
+        }
+        if (lines.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Format, Integer> scores = new LinkedHashMap<>();
+        for (String line : lines) {
+            String t = line.strip();
+            if (t.isEmpty() || HINT_LINE.matcher(line).matches()) {
+                continue;
+            }
+            scoreLine(t, scores);
+        }
+        return scores;
     }
 
     private static void scoreLine(String t, Map<Format, Integer> scores) {

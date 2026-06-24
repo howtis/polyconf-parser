@@ -125,6 +125,20 @@ class FormatClassifierTest {
     }
 
     @Test
+    void scoreMapReturnsScoresForTiedFormats() {
+        var scores = FormatClassifier.scoreMap(List.of("key=value"));
+        assertTrue(scores.containsKey(Format.INI));
+        assertTrue(scores.containsKey(Format.PROPERTIES));
+        assertEquals(scores.get(Format.INI), scores.get(Format.PROPERTIES));
+    }
+
+    @Test
+    void scoreMapReturnsEmptyForAllBlank() {
+        var scores = FormatClassifier.scoreMap(List.of("", "  "));
+        assertTrue(scores.isEmpty());
+    }
+
+    @Test
     void emptyBlockReturnsUnknown() {
         assertEquals(Format.UNKNOWN, FormatClassifier.classify(List.of()));
     }
