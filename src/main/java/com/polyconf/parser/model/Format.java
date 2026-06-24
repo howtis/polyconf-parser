@@ -1,9 +1,10 @@
 package com.polyconf.parser.model;
 
-import com.polyconf.parser.classify.CsvDetector;
 import com.polyconf.parser.classify.DotenvDetector;
 import com.polyconf.parser.classify.FormatDetector;
+import com.polyconf.parser.classify.HoconDetector;
 import com.polyconf.parser.classify.IniDetector;
+import com.polyconf.parser.classify.Json5Detector;
 import com.polyconf.parser.classify.JsonDetector;
 import com.polyconf.parser.classify.PropertiesDetector;
 import com.polyconf.parser.classify.TomlDetector;
@@ -61,7 +62,8 @@ public final class Format {
     public static final Format JSON = register("JSON", new JsonDetector());
     public static final Format DOTENV = register("DOTENV", new DotenvDetector());
     public static final Format XML = register("XML", new XmlDetector());
-    public static final Format CSV = register("CSV", new CsvDetector());
+    public static final Format HOCON = register("HOCON", new HoconDetector());
+    public static final Format JSON5 = register("JSON5", new Json5Detector());
 
     @Override
     public boolean equals(Object o) {

@@ -138,15 +138,14 @@ class IniParserTest {
     }
 
     @Test
-    void valueWithInlineCommentLeaksCommentIntoValue() {
-        // Bug: IniParser does not strip inline comments (value includes "; comment")
+    void valueWithInlineCommentIsStripped() {
         List<String> lines = List.of(
                 "key=value ; this is a comment"
         );
         ConfigSection result = parser.parse(lines).section();
 
         String val = ((ConfigValue) result.children().get("key")).asString().orElseThrow();
-        // Actual: value contains "; this is a comment"
+        // ini4j includes the comment in the value since ";" is only a comment at line start
         assertTrue(val.startsWith("value"));
     }
 

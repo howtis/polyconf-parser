@@ -6,11 +6,15 @@ A Java library that parses **polyglot configuration files** — files containing
 
 ### Supported Formats
 
-TOML · YAML · JSON · Properties · INI · Dotenv · XML · CSV
+TOML · YAML · JSON · JSON5 · Properties · INI · Dotenv · XML · HOCON
 
 ### How It Works
 
 `polyconf-parser` segments input content into blocks, auto-detects each block's format, and parses them individually. Results are merged into a unified configuration model.
+
+Two core constraints:
+- **One format per line** — each line belongs to exactly one format; a line cannot contain tokens from multiple formats.
+- **Contiguous blocks** — once a format begins, all successive lines belong to that format until the next format block starts. Blocks do not interleave.
 
 - **Auto-detection** — each block's format is inferred from its content
 - **Hints** — explicit `# @format TOML` markers to override detection

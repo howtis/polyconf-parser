@@ -78,16 +78,6 @@ class FormatClassifierTest {
     }
 
     @Test
-    void detectsCsv() {
-        List<String> lines = List.of(
-                "name,age,city",
-                "Alice,30,Seoul",
-                "Bob,25,Busan"
-        );
-        assertEquals(Format.CSV, FormatClassifier.classify(lines));
-    }
-
-    @Test
     void ambiguousReturnsUnknown() {
         List<String> lines = List.of("key=value");
         assertEquals(Format.UNKNOWN, FormatClassifier.classify(lines));

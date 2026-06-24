@@ -252,19 +252,6 @@ class PolyconfParserTest {
         assertEquals(true, result.flattened().get("app.debug"));
     }
 
-    @Test
-    void csvBlock() {
-        List<String> lines = List.of(
-                "name,age,city",
-                "Alice,30,Seoul",
-                "Bob,25,Busan"
-        );
-
-        ParseResult result = parser.parse(lines);
-
-        assertEquals(1, result.blocks().size());
-        assertEquals(Format.CSV, result.blocks().get(0).detectedFormat());
-    }
 
     @Test
     void parseStringContent() {

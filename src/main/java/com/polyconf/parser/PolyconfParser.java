@@ -14,9 +14,10 @@ import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.Format;
 import com.polyconf.parser.model.ParseResult;
 import com.polyconf.parser.model.ParserResult;
-import com.polyconf.parser.parse.CsvParser;
 import com.polyconf.parser.parse.DotenvParser;
+import com.polyconf.parser.parse.HoconParser;
 import com.polyconf.parser.parse.IniParser;
+import com.polyconf.parser.parse.Json5Parser;
 import com.polyconf.parser.parse.JsonParser;
 import com.polyconf.parser.parse.LenientParser;
 import com.polyconf.parser.parse.PropertiesParser;
@@ -43,7 +44,8 @@ public final class PolyconfParser {
             Map.entry(Format.JSON, new JsonParser()),
             Map.entry(Format.DOTENV, new DotenvParser()),
             Map.entry(Format.XML, new XmlParser()),
-            Map.entry(Format.CSV, new CsvParser())
+            Map.entry(Format.HOCON, new HoconParser()),
+            Map.entry(Format.JSON5, new Json5Parser())
     );
 
     /**
