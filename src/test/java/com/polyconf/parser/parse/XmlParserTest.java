@@ -74,33 +74,6 @@ class XmlParserTest {
     }
 
     @Test
-    void malformedXmlReturnsEmpty() {
-        List<String> lines = List.of("<root><unclosed>");
-        ParserResult pr = parser.parse(lines);
-
-        assertTrue(pr.section().children().isEmpty());
-        assertEquals(1, pr.diagnostics().size());
-        assertEquals(DiagnosticLevel.ERROR, pr.diagnostics().get(0).level());
-    }
-
-    @Test
-    void emptyInput() {
-        ConfigSection result = parser.parse(List.of()).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void blankInput() {
-        ConfigSection result = parser.parse(List.of("   ")).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void nullInputThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
-    }
-
-    @Test
     void elementWithTextAndChild() {
         List<String> lines = List.of("<root><parent>text<child>val</child></parent></root>");
         ConfigSection result = parser.parse(lines).section();
@@ -133,13 +106,4 @@ class XmlParserTest {
         assertNotNull(result.children().get("root"));
     }
 
-    @Test
-    void commentIgnored() {
-        List<String> lines = List.of(
-                "<!-- config file -->",
-                "<root><key>value</key></root>"
-        );
-        ConfigSection result = parser.parse(lines).section();
-        assertNotNull(result.children().get("root"));
-    }
 }

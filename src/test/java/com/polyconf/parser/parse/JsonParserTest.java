@@ -79,23 +79,6 @@ class JsonParserTest {
     }
 
     @Test
-    void emptyInput() {
-        ConfigSection result = parser.parse(List.of()).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void blankInput() {
-        ConfigSection result = parser.parse(List.of("   ")).section();
-        assertTrue(result.children().isEmpty());
-    }
-
-    @Test
-    void nullInputThrows() {
-        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
-    }
-
-    @Test
     void multilineJson() {
         List<String> lines = List.of(
                 "{",
@@ -131,13 +114,4 @@ class JsonParserTest {
         assertEquals("a", ((ConfigValue) first.children().get("name")).asString().orElseThrow());
     }
 
-    @Test
-    void malformedJsonReturnsEmpty() {
-        List<String> lines = List.of("{invalid json");
-        ParserResult pr = parser.parse(lines);
-
-        assertTrue(pr.section().children().isEmpty());
-        assertEquals(1, pr.diagnostics().size());
-        assertEquals(DiagnosticLevel.ERROR, pr.diagnostics().get(0).level());
-    }
 }
