@@ -22,6 +22,12 @@ public final class KdlParser implements LenientParser {
     private static final dev.kdl.parse.KdlParser PARSER = dev.kdl.parse.KdlParser.hybrid();
 
     @Override
+    public boolean isPlausible(List<String> lines) {
+        String text = String.join(" ", lines);
+        return text.contains("{") || text.contains(";");
+    }
+
+    @Override
     public ParserResult parse(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");

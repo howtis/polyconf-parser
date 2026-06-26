@@ -80,4 +80,40 @@ public final class KdlDetector extends FormatDetector {
 
         return score;
     }
+
+    @Override
+    public int signaturePriority() {
+        return 70;
+    }
+
+    @Override
+    public boolean hasSignature(List<String> lines) {
+        boolean hasKdlSignal = false;
+        boolean hasDoubleSlashComment = false;
+        boolean hasBraceBlock = false;
+
+        for (String line : lines) {
+            String stripped = line.strip();
+            if (stripped.isEmpty()) continue;
+
+            if (!hasKdlSignal) {
+                if (stripped.contains("/-")
+                        || stripped.contains("#true")
+                        || stripped.contains("#false")
+                        || stripped.contains("#null")
+                        || stripped.contains("=\"")
+                        || stripped.contains("='")) {
+                    hasKdlSignal = true;
+                }
+            }
+            if (stripped.startsWith("//")) {
+                hasDoubleSlashComment = true;
+            }
+            if (stripped.contains("{")) {
+                hasBraceBlock = true;
+            }
+        }
+
+        return hasKdlSignal || (hasDoubleSlashComment && hasBraceBlock);
+    }
 }

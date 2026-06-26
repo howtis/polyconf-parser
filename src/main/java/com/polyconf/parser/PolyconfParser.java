@@ -53,16 +53,10 @@ public final class PolyconfParser {
     private static final Map<Format, LenientParser> PARSER_MAP = PARSERS.stream()
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    // Guards to prevent lenient parsers from matching non-intended formats.
-    // Without these, INI matches key=value, KDL matches key=value as empty nodes, etc.
     private static boolean isPlausible(List<String> lines, Format format) {
-        if (format == Format.INI) {
-            return lines.stream().anyMatch(l -> l.strip().startsWith("["));
-        }
-        if (format == Format.KDL) {
-            // KDL has {children}, semicolons, or node arguments/properties after the name
-            String text = String.join(" ", lines);
-            return text.contains("{") || text.contains(";");
+        LenientParser parser = PARSER_MAP.get(format);
+        if (parser != null) {
+            return parser.isPlausible(lines);
         }
         return true;
     }

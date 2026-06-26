@@ -19,6 +19,11 @@ public final class IniParser implements LenientParser {
     private static final String DUMMY_SECTION = "__polyconf_global__";
 
     @Override
+    public boolean isPlausible(List<String> lines) {
+        return lines.stream().anyMatch(l -> l.strip().startsWith("["));
+    }
+
+    @Override
     public ParserResult parse(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");

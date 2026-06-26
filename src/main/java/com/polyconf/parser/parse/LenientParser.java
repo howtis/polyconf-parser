@@ -8,4 +8,8 @@ import java.util.List;
 public interface LenientParser {
 
     ParserResult parse(List<String> lines);
+
+    default boolean isPlausible(List<String> lines) {
+        return true;
+    }
 }

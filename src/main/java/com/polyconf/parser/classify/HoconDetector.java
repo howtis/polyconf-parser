@@ -35,4 +35,47 @@ public final class HoconDetector extends FormatDetector {
 
         return score;
     }
+
+    @Override
+    public int signaturePriority() {
+        return 90;
+    }
+
+    @Override
+    public boolean hasSignature(List<String> lines) {
+        boolean hasHoconSignal = false;
+        boolean hasHoconEq = false;
+        boolean hasDoubleSlashComment = false;
+        boolean hasBlockBrace = false;
+
+        for (String line : lines) {
+            String stripped = line.strip();
+            if (stripped.isEmpty()) continue;
+
+            if (!hasHoconSignal) {
+                if (stripped.contains("${?")
+                        || stripped.contains("+=")
+                        || (stripped.startsWith("include")
+                            && (stripped.contains("\"") || stripped.contains("'")))) {
+                    hasHoconSignal = true;
+                }
+            }
+            if (stripped.contains(" = ")) {
+                hasHoconEq = true;
+            }
+            if (stripped.startsWith("//")) {
+                hasDoubleSlashComment = true;
+            }
+            if (stripped.endsWith("{")) {
+                hasBlockBrace = true;
+            }
+        }
+
+        // " = " with `//` or block-opening `{` indicates HOCON assignment syntax, not KDL
+        if (!hasHoconSignal && hasHoconEq && (hasDoubleSlashComment || hasBlockBrace)) {
+            hasHoconSignal = true;
+        }
+
+        return hasHoconSignal;
+    }
 }
