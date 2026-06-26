@@ -140,10 +140,11 @@ public final class FormatClassifier {
         if (hasHoconSignal) {
             return Format.HOCON;
         }
-        // Dotenv: export keyword, ${VAR} interpolation, or ALL_CAPS key patterns
+        // Dotenv: export keyword or ALL_CAPS key patterns.
+        // ${VAR} interpolation alone is NOT sufficient — YAML can contain ${} references
+        // (e.g. credentials.username: ${DB_USER}) without being DOTENV.
         if (!hasBraceBlock && !hasHoconSignal && xmlSignals < 2) {
-            if (hasDotenvExport || hasDotenvInterp
-                    || hasDotenvCapsQuoted || hasDotenvCapsAssign) {
+            if (hasDotenvExport || hasDotenvCapsQuoted || hasDotenvCapsAssign) {
                 return Format.DOTENV;
             }
         }

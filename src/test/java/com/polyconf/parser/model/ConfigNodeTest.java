@@ -110,6 +110,45 @@ class ConfigNodeTest {
     }
 
     @Test
+    void configAccessorContainsKey() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+
+        ConfigSection server = new ConfigSection("server", p, "server");
+        server.children().put("host", new ConfigValue("host", "localhost", ValueType.STRING, p, "server.host"));
+        server.children().put("port", new ConfigValue("port", 5432, ValueType.INTEGER, p, "server.port"));
+        root.children().put("server", server);
+        root.children().put("name", new ConfigValue("name", "test", ValueType.STRING, p, "name"));
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+
+        assertTrue(accessor.containsKey("name"));
+        assertTrue(accessor.containsKey("server"));
+        assertTrue(accessor.containsKey("server.host"));
+        assertTrue(accessor.containsKey("server.port"));
+        assertFalse(accessor.containsKey("missing"));
+        assertFalse(accessor.containsKey("server.missing"));
+        assertFalse(accessor.containsKey("server.host.extra"));
+    }
+
+    @Test
+    void configAccessorContainsKeyKdlPureContainer() {
+        Provenance p = new Provenance(0, Format.KDL, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+
+        ConfigSection server = new ConfigSection("server", p, "server");
+        server.children().put("host", new ConfigValue("host", "0.0.0.0", ValueType.STRING, p, "server.host"));
+        server.children().put("port", new ConfigValue("port", 8080, ValueType.INTEGER, p, "server.port"));
+        root.children().put("server", server);
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+
+        assertTrue(accessor.containsKey("server"));
+        assertTrue(accessor.containsKey("server.host"));
+        assertFalse(accessor.containsKey("missing"));
+    }
+
+    @Test
     void parseResultSuccessPath() {
         Provenance p = new Provenance(0, Format.TOML, "", 1.0);
         ConfigSection root = new ConfigSection("", p, "");

@@ -46,9 +46,16 @@ public final class ConfigAccessor {
                 if (item instanceof ConfigValue v) {
                     result.put(idxPrefix, v.rawValue());
                 } else if (item instanceof ConfigSection section) {
-                    // Directly flatten children without adding section's internal key
-                    for (ConfigNode child : section.children().values()) {
-                        flatten(child, idxPrefix, result);
+                    // Check for self-marker (#text or #self) — treat section as a leaf value
+                    var selfChild = section.children().values().stream()
+                            .filter(c -> c instanceof ConfigValue cv && isSelfMarker(cv.key()))
+                            .findFirst();
+                    if (selfChild.isPresent()) {
+                        result.put(idxPrefix, ((ConfigValue) selfChild.get()).rawValue());
+                    } else {
+                        for (ConfigNode child : section.children().values()) {
+                            flatten(child, idxPrefix, result);
+                        }
                     }
                 } else {
                     flatten(item, idxPrefix, result);
@@ -93,6 +100,10 @@ public final class ConfigAccessor {
 
     public Optional<ConfigNode> get(String dottedPath) {
         return root.resolve(dottedPath);
+    }
+
+    public boolean containsKey(String dottedPath) {
+        return root.resolve(dottedPath).isPresent();
     }
 
     public Stream<ConfigNode> walk() {

@@ -34,15 +34,13 @@ class KdlParserTest {
         Map<String, ConfigNode> serverChildren = server.children();
         assertEquals(2, serverChildren.size());
 
-        ConfigSection host = (ConfigSection) serverChildren.get("host");
+        ConfigValue host = (ConfigValue) serverChildren.get("host");
         assertNotNull(host);
-        ConfigValue hostVal = (ConfigValue) host.children().get("0");
-        assertEquals("localhost", hostVal.get());
+        assertEquals("localhost", host.get());
 
-        ConfigSection port = (ConfigSection) serverChildren.get("port");
+        ConfigValue port = (ConfigValue) serverChildren.get("port");
         assertNotNull(port);
-        ConfigValue portVal = (ConfigValue) port.children().get("0");
-        assertEquals(8080L, portVal.get());
+        assertEquals(8080L, port.get());
     }
 
     @Test
@@ -94,13 +92,13 @@ class KdlParserTest {
         ConfigSection section = (ConfigSection) contents.children().get("section");
         assertNotNull(section);
 
-        ConfigSection para1 = (ConfigSection) section.children().get("paragraph");
+        ConfigValue para1 = (ConfigValue) section.children().get("paragraph");
         assertNotNull(para1);
-        assertEquals("This is first", ((ConfigValue) para1.children().get("0")).get());
+        assertEquals("This is first", para1.get());
 
-        ConfigSection para2 = (ConfigSection) section.children().get("paragraph_1");
+        ConfigValue para2 = (ConfigValue) section.children().get("paragraph_1");
         assertNotNull(para2);
-        assertEquals("This is second", ((ConfigValue) para2.children().get("0")).get());
+        assertEquals("This is second", para2.get());
     }
 
     @Test
@@ -117,9 +115,9 @@ class KdlParserTest {
 
         ConfigSection server = (ConfigSection) result.section().children().get("server");
         assertNotNull(server);
-        ConfigSection host = (ConfigSection) server.children().get("host");
+        ConfigValue host = (ConfigValue) server.children().get("host");
         assertNotNull(host);
-        assertEquals("localhost", ((ConfigValue) host.children().get("0")).get());
+        assertEquals("localhost", host.get());
     }
 
     @Test
@@ -135,9 +133,9 @@ class KdlParserTest {
 
         ConfigSection server = (ConfigSection) result.section().children().get("server");
         assertNotNull(server);
-        ConfigSection host = (ConfigSection) server.children().get("host");
+        ConfigValue host = (ConfigValue) server.children().get("host");
         assertNotNull(host);
-        assertEquals("localhost", ((ConfigValue) host.children().get("0")).get());
+        assertEquals("localhost", host.get());
     }
 
     @Test
@@ -153,8 +151,7 @@ class KdlParserTest {
 
         ConfigSection server = (ConfigSection) result.section().children().get("server");
         assertNotNull(server);
-        assertEquals("localhost",
-                ((ConfigValue) ((ConfigSection) server.children().get("host")).children().get("0")).get());
+        assertEquals("localhost", ((ConfigValue) server.children().get("host")).get());
     }
 
     @Test
@@ -226,9 +223,9 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection title = (ConfigSection) result.section().children().get("title");
+        ConfigValue title = (ConfigValue) result.section().children().get("title");
         assertNotNull(title);
-        assertEquals("Hello-World", ((ConfigValue) title.children().get("0")).get());
+        assertEquals("Hello-World", title.get());
     }
 
     @Test

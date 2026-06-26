@@ -506,28 +506,31 @@ class ResourceTest {
             assertNoErrors(r, ".env");
             assertFormat(r, Format.DOTENV, ".env");
             Map<String, Object> f = r.flattened();
-            assertEquals("myapp", f.get("APP_NAME"));
+            assertEquals("My Application", f.get("APP_NAME"));
             assertEquals("production", f.get("APP_ENV"));
-            assertEquals(true, f.get("APP_DEBUG"));
-            assertEquals(8080L, f.get("APP_PORT"));
-            assertEquals("0.0.0.0", f.get("APP_HOST"));
-            assertEquals("localhost", f.get("DB_HOST"));
-            assertEquals(5432L, f.get("DB_PORT"));
-            assertEquals("localhost:6379", f.get("REDIS_URL"));
+            assertEquals(false, f.get("APP_DEBUG"));
+            assertEquals("localhost", f.get("DATABASE_HOST"));
+            assertEquals(5432L, f.get("DATABASE_PORT"));
+            assertEquals("myapp", f.get("DATABASE_NAME"));
+            assertEquals("postgres://localhost:5432/myapp", f.get("DATABASE_URL"));
+            assertEquals("s3cr3t-k3y-v4lu3", f.get("SECRET_KEY"));
+            assertEquals("localhost,127.0.0.1,example.com", f.get("ALLOWED_HOSTS"));
+            assertEquals(100L, f.get("MAX_CONNECTIONS"));
+            assertEquals(30L, f.get("TIMEOUT"));
         }
 
         @Test
         void envProduction() {
             ParseResult r = parseResource("samples/dotenv/.env.production");
-            assertNoErrors(r, ".env.production");
+            assertTrue(r.hasErrors(), "Expected circular reference errors");
             assertFormat(r, Format.DOTENV, ".env.production");
             Map<String, Object> f = r.flattened();
-            assertEquals("myapp-prod", f.get("APP_NAME"));
             assertEquals("production", f.get("APP_ENV"));
             assertEquals(false, f.get("APP_DEBUG"));
             assertEquals("db-prod.internal", f.get("DB_HOST"));
+            assertEquals(5432L, f.get("DB_PORT"));
             assertEquals("redis-prod.internal", f.get("REDIS_HOST"));
-            assertEquals("prod-secret-key", f.get("SECRET_KEY"));
+            assertEquals(6379L, f.get("REDIS_PORT"));
         }
 
         @Test
@@ -536,12 +539,16 @@ class ResourceTest {
             assertNoErrors(r, ".env.test");
             assertFormat(r, Format.DOTENV, ".env.test");
             Map<String, Object> f = r.flattened();
-            assertEquals("myapp-test", f.get("APP_NAME"));
-            assertEquals("testing", f.get("APP_ENV"));
+            assertEquals("test", f.get("APP_ENV"));
             assertEquals(true, f.get("APP_DEBUG"));
+            assertEquals(3000L, f.get("SERVER_PORT"));
             assertEquals("localhost", f.get("DB_HOST"));
+            assertEquals(5432L, f.get("DB_PORT"));
             assertEquals("localhost", f.get("REDIS_HOST"));
-            assertEquals("test-secret-key", f.get("SECRET_KEY"));
+            assertEquals(6379L, f.get("REDIS_PORT"));
+            assertEquals("test-secret-key", f.get("JWT_SECRET"));
+            assertEquals(10000L, f.get("TEST_TIMEOUT"));
+            assertEquals(true, f.get("MOCK_ENABLED"));
         }
     }
 
@@ -612,8 +619,20 @@ class ResourceTest {
             assertNoErrors(r, "app.kdl");
             assertFormat(r, Format.KDL, "app.kdl");
             Map<String, Object> f = r.flattened();
-            assertTrue(f.containsKey("server"), "Should contain server node");
-            assertTrue(f.containsKey("database"), "Should contain database node");
+            assertEquals("myapp", f.get("package.name"));
+            assertEquals("1.0.0", f.get("package.version"));
+            assertEquals("0.0.0.0", f.get("server.host"));
+            assertEquals(8080L, f.get("server.port"));
+            assertEquals(4L, f.get("server.workers"));
+            assertEquals(30L, f.get("server.timeout.duration"));
+            assertEquals("localhost", f.get("database.host"));
+            assertEquals(5432L, f.get("database.port"));
+            assertEquals("myapp", f.get("database.name"));
+            assertEquals("admin", f.get("database.credentials.username"));
+            assertEquals("secret", f.get("database.credentials.password"));
+            assertEquals(5L, f.get("database.pool.min"));
+            assertEquals(20L, f.get("database.pool.max"));
+            assertEquals("info", f.get("features.logging.level"));
         }
 
         @Test
@@ -622,9 +641,18 @@ class ResourceTest {
             assertNoErrors(r, "complex.kdl");
             assertFormat(r, Format.KDL, "complex.kdl");
             Map<String, Object> f = r.flattened();
-            assertTrue(f.containsKey("package"), "Should contain package node");
-            assertTrue(f.containsKey("infrastructure"), "Should contain infrastructure node");
-            assertTrue(f.containsKey("settings"), "Should contain settings node");
+            assertEquals("enterprise-app", f.get("package.name"));
+            assertEquals("3.2.1", f.get("package.version"));
+            assertEquals("Alice", f.get("package.authors.0"));
+            assertEquals("Bob", f.get("package.authors.1"));
+            assertEquals("alice@corp.com", f.get("package.authors.alice.email"));
+            assertEquals("lead", f.get("package.authors.alice.role"));
+            assertEquals("bob@corp.com", f.get("package.authors.bob.email"));
+            assertEquals("dev", f.get("package.authors.bob.role"));
+            assertEquals(1000L, f.get("settings.rate_limit.requests"));
+            assertEquals(60L, f.get("settings.rate_limit.period_sec"));
+            assertEquals("staging", f.get("environment.name"));
+            assertEquals("debug", f.get("environment.log_level"));
         }
 
         @Test
@@ -633,12 +661,23 @@ class ResourceTest {
             assertNoErrors(r, "config.kdl");
             assertFormat(r, Format.KDL, "config.kdl");
             Map<String, Object> f = r.flattened();
-            assertTrue(f.containsKey("title"), "Should contain title");
-            assertTrue(f.containsKey("services"), "Should contain services node");
-            assertTrue(f.containsKey("numbers"), "Should contain numbers array");
-            assertTrue(f.containsKey("names"), "Should contain names array");
-            assertTrue(f.containsKey("count"), "Should contain count (type annotation)");
-            assertTrue(f.containsKey("ratio"), "Should contain ratio (type annotation)");
+            assertEquals("KDL Example", f.get("title"));
+            assertEquals("value", f.get("node"));
+            assertEquals(8080L, f.get("services.http.port"));
+            assertEquals("/health", f.get("services.http.routes.route.path"));
+            assertEquals("healthCheck", f.get("services.http.routes.route.handler"));
+            assertEquals(9090L, f.get("services.grpc.port"));
+            assertEquals(1L, f.get("numbers.0"));
+            assertEquals(2L, f.get("numbers.1"));
+            assertEquals(3L, f.get("numbers.2"));
+            assertEquals(4L, f.get("numbers.3"));
+            assertEquals(5L, f.get("numbers.4"));
+            assertEquals("Alice", f.get("names.0"));
+            assertEquals("Bob", f.get("names.1"));
+            assertEquals("Charlie", f.get("names.2"));
+            assertEquals(42L, f.get("count"));
+            assertEquals(3.14159, (Double) f.get("ratio"), 0.00001);
+            assertEquals("hello", f.get("label"));
         }
     }
 
