@@ -23,7 +23,7 @@ class TomlParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -31,7 +31,7 @@ class TomlParserTest {
         List<String> lines = List.of("port = 5432");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(5432, ((ConfigValue) result.children().get("port")).asInt().orElseThrow());
+        assertEquals(5432, result.childValue("port").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -39,8 +39,8 @@ class TomlParserTest {
         List<String> lines = List.of("enabled = true", "debug = false");
         ConfigSection result = parser.parse(lines).section();
 
-        assertTrue(((ConfigValue) result.children().get("enabled")).asBool().orElseThrow());
-        assertFalse(((ConfigValue) result.children().get("debug")).asBool().orElseThrow());
+        assertTrue(result.childValue("enabled").orElseThrow().asBool().orElseThrow());
+        assertFalse(result.childValue("debug").orElseThrow().asBool().orElseThrow());
     }
 
     @Test
@@ -52,9 +52,9 @@ class TomlParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection db = (ConfigSection) result.children().get("database");
-        assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
-        assertEquals(5432, ((ConfigValue) db.children().get("port")).asInt().orElseThrow());
+        ConfigSection db = result.childSection("database").orElseThrow();
+        assertEquals("localhost", db.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals(5432, db.childValue("port").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -66,9 +66,9 @@ class TomlParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection database = (ConfigSection) result.children().get("database");
-        ConfigSection connection = (ConfigSection) database.children().get("connection");
-        assertEquals("localhost", ((ConfigValue) connection.children().get("host")).asString().orElseThrow());
+        ConfigSection database = result.childSection("database").orElseThrow();
+        ConfigSection connection = database.childSection("connection").orElseThrow();
+        assertEquals("localhost", connection.childValue("host").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -76,7 +76,7 @@ class TomlParserTest {
         List<String> lines = List.of("ports = [8080, 8081, 8082]");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigList ports = (ConfigList) result.children().get("ports");
+        ConfigList ports = result.childList("ports").orElseThrow();
         assertEquals(3, ports.items().size());
     }
 
@@ -85,7 +85,7 @@ class TomlParserTest {
         List<String> lines = List.of("pi = 3.14");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(3.14, ((ConfigValue) result.children().get("pi")).asFloat().orElseThrow(), 0.001);
+        assertEquals(3.14, result.childValue("pi").orElseThrow().asFloat().orElseThrow(), 0.001);
     }
 
     @Test
@@ -93,8 +93,8 @@ class TomlParserTest {
         List<String> lines = List.of("database.host = \"localhost\"");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection database = (ConfigSection) result.children().get("database");
-        assertEquals("localhost", ((ConfigValue) database.children().get("host")).asString().orElseThrow());
+        ConfigSection database = result.childSection("database").orElseThrow();
+        assertEquals("localhost", database.childValue("host").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -102,7 +102,7 @@ class TomlParserTest {
         List<String> lines = List.of("birthday = 2023-12-25");
         ParserResult pr = parser.parse(lines);
 
-        ConfigValue val = (ConfigValue) pr.section().children().get("birthday");
+        ConfigValue val = pr.section().childValue("birthday").orElseThrow();
         assertEquals(ValueType.DATE, val.type());
         assertInstanceOf(java.time.LocalDate.class, val.rawValue());
     }
@@ -112,7 +112,7 @@ class TomlParserTest {
         List<String> lines = List.of("created = 2023-12-25T10:30:00");
         ParserResult pr = parser.parse(lines);
 
-        ConfigValue val = (ConfigValue) pr.section().children().get("created");
+        ConfigValue val = pr.section().childValue("created").orElseThrow();
         assertEquals(ValueType.DATETIME, val.type());
     }
 
@@ -121,7 +121,7 @@ class TomlParserTest {
         List<String> lines = List.of("timestamp = 2023-12-25T10:30:00+09:00");
         ParserResult pr = parser.parse(lines);
 
-        ConfigValue val = (ConfigValue) pr.section().children().get("timestamp");
+        ConfigValue val = pr.section().childValue("timestamp").orElseThrow();
         assertEquals(ValueType.DATETIME, val.type());
     }
 
@@ -138,10 +138,10 @@ class TomlParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigList servers = (ConfigList) result.children().get("servers");
+        ConfigList servers = result.childList("servers").orElseThrow();
         assertEquals(2, servers.items().size());
         ConfigSection first = (ConfigSection) servers.items().get(0);
-        assertEquals("a", ((ConfigValue) first.children().get("host")).asString().orElseThrow());
+        assertEquals("a", first.childValue("host").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -149,9 +149,9 @@ class TomlParserTest {
         List<String> lines = List.of("db = { host = \"localhost\", port = 5432 }");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection db = (ConfigSection) result.children().get("db");
-        assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
-        assertEquals(5432, ((ConfigValue) db.children().get("port")).asInt().orElseThrow());
+        ConfigSection db = result.childSection("db").orElseThrow();
+        assertEquals("localhost", db.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals(5432, db.childValue("port").orElseThrow().asInt().orElseThrow());
     }
 
     @Test

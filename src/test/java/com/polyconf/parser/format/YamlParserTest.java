@@ -22,7 +22,7 @@ class YamlParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -30,7 +30,7 @@ class YamlParserTest {
         List<String> lines = List.of("port: 5432");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(5432, ((ConfigValue) result.children().get("port")).asInt().orElseThrow());
+        assertEquals(5432, result.childValue("port").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -38,8 +38,8 @@ class YamlParserTest {
         List<String> lines = List.of("enabled: true", "debug: false");
         ConfigSection result = parser.parse(lines).section();
 
-        assertTrue(((ConfigValue) result.children().get("enabled")).asBool().orElseThrow());
-        assertFalse(((ConfigValue) result.children().get("debug")).asBool().orElseThrow());
+        assertTrue(result.childValue("enabled").orElseThrow().asBool().orElseThrow());
+        assertFalse(result.childValue("debug").orElseThrow().asBool().orElseThrow());
     }
 
     @Test
@@ -51,9 +51,9 @@ class YamlParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection db = (ConfigSection) result.children().get("database");
-        assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
-        assertEquals(5432, ((ConfigValue) db.children().get("port")).asInt().orElseThrow());
+        ConfigSection db = result.childSection("database").orElseThrow();
+        assertEquals("localhost", db.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals(5432, db.childValue("port").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -66,7 +66,7 @@ class YamlParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigList items = (ConfigList) result.children().get("items");
+        ConfigList items = result.childList("items").orElseThrow();
         assertEquals(3, items.items().size());
         assertEquals("a", ((ConfigValue) items.items().get(0)).asString().orElseThrow());
     }
@@ -76,7 +76,7 @@ class YamlParserTest {
         List<String> lines = List.of("key:");
         ConfigSection result = parser.parse(lines).section();
 
-        assertTrue(((ConfigValue) result.children().get("key")).isNull());
+        assertTrue(result.childValue("key").orElseThrow().isNull());
     }
 
     @Test
@@ -84,7 +84,7 @@ class YamlParserTest {
         List<String> lines = List.of("pi: 3.14");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(3.14, ((ConfigValue) result.children().get("pi")).asFloat().orElseThrow(), 0.001);
+        assertEquals(3.14, result.childValue("pi").orElseThrow().asFloat().orElseThrow(), 0.001);
     }
 
     @Test
@@ -97,10 +97,10 @@ class YamlParserTest {
         ParserResult pr = parser.parse(lines);
 
         assertEquals(2, pr.section().children().size());
-        ConfigSection doc0 = (ConfigSection) pr.section().children().get("0");
-        ConfigSection doc1 = (ConfigSection) pr.section().children().get("1");
-        assertEquals("value1", ((ConfigValue) doc0.children().get("key1")).asString().orElseThrow());
-        assertEquals("value2", ((ConfigValue) doc1.children().get("key2")).asString().orElseThrow());
+        ConfigSection doc0 = pr.section().childSection("0").orElseThrow();
+        ConfigSection doc1 = pr.section().childSection("1").orElseThrow();
+        assertEquals("value1", doc0.childValue("key1").orElseThrow().asString().orElseThrow());
+        assertEquals("value2", doc1.childValue("key2").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -112,7 +112,7 @@ class YamlParserTest {
         );
         ParserResult pr = parser.parse(lines);
 
-        ConfigList root = (ConfigList) pr.section().children().get("root");
+        ConfigList root = pr.section().childList("root").orElseThrow();
         assertEquals(3, root.items().size());
         assertEquals("item1", ((ConfigValue) root.items().get(0)).asString().orElseThrow());
     }

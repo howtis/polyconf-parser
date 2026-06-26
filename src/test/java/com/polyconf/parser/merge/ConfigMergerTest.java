@@ -60,8 +60,8 @@ class ConfigMergerTest {
         MergeResult result = merger.merge(List.of(block1, block2));
 
         assertEquals(2, result.merged().children().size());
-        assertEquals("localhost", ((ConfigValue) result.merged().children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) result.merged().children().get("port")).asString().orElseThrow());
+        assertEquals("localhost", result.merged().childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", result.merged().childValue("port").orElseThrow().asString().orElseThrow());
         assertTrue(result.diagnostics().isEmpty());
     }
 
@@ -73,7 +73,7 @@ class ConfigMergerTest {
         MergeResult result = merger.merge(List.of(block1, block2));
 
         assertEquals(1, result.merged().children().size());
-        assertEquals("newhost", ((ConfigValue) result.merged().children().get("host")).asString().orElseThrow());
+        assertEquals("newhost", result.merged().childValue("host").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -85,12 +85,10 @@ class ConfigMergerTest {
 
         MergeResult result = merger.merge(List.of(block1, block2));
 
-        ConfigNode db = result.merged().children().get("db");
-        assertInstanceOf(ConfigSection.class, db);
-        ConfigSection dbSection = (ConfigSection) db;
+        ConfigSection dbSection = result.merged().childSection("db").orElseThrow();
         assertEquals(2, dbSection.children().size());
-        assertEquals("localhost", ((ConfigValue) dbSection.children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) dbSection.children().get("port")).asString().orElseThrow());
+        assertEquals("localhost", dbSection.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", dbSection.childValue("port").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -104,8 +102,8 @@ class ConfigMergerTest {
 
         MergeResult result = merger.merge(List.of(block1, block2, block3));
 
-        ConfigSection db = (ConfigSection) result.merged().children().get("db");
-        assertEquals("overwritten", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
+        ConfigSection db = result.merged().childSection("db").orElseThrow();
+        assertEquals("overwritten", db.childValue("host").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -116,7 +114,7 @@ class ConfigMergerTest {
         MergePolicy policy = new MergePolicy(CollisionMode.WARN, TypeConflictMode.OVERWRITE);
         MergeResult result = merger.merge(List.of(block1, block2), policy);
 
-        assertEquals("second", ((ConfigValue) result.merged().children().get("key")).asString().orElseThrow());
+        assertEquals("second", result.merged().childValue("key").orElseThrow().asString().orElseThrow());
         assertEquals(1, result.diagnostics().size());
         BlockDiagnostic diag = result.diagnostics().get(0);
         assertEquals(DiagnosticLevel.WARNING, diag.level());
@@ -140,8 +138,7 @@ class ConfigMergerTest {
 
         MergeResult result = merger.merge(List.of(block1, block2));
 
-        ConfigNode db = result.merged().children().get("db");
-        assertInstanceOf(ConfigSection.class, db);
+        assertNotNull(result.merged().childSection("db").orElse(null));
         assertEquals(1, result.diagnostics().size());
         BlockDiagnostic diag = result.diagnostics().get(0);
         assertTrue(diag.message().contains("Type conflict"));
@@ -170,7 +167,7 @@ class ConfigMergerTest {
         MergeResult result = merger.merge(List.of(section));
 
         assertEquals(1, result.merged().children().size());
-        assertEquals("value", ((ConfigValue) result.merged().children().get("key")).asString().orElseThrow());
+        assertEquals("value", result.merged().childValue("key").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -204,10 +201,10 @@ class ConfigMergerTest {
         MergeResult result = merger.merge(List.of(block1, block2, block3));
 
         assertEquals(4, result.merged().children().size());
-        assertEquals("1", ((ConfigValue) result.merged().children().get("a")).asString().orElseThrow());
-        assertEquals("overwritten", ((ConfigValue) result.merged().children().get("b")).asString().orElseThrow());
-        assertEquals("3", ((ConfigValue) result.merged().children().get("c")).asString().orElseThrow());
-        assertEquals("4", ((ConfigValue) result.merged().children().get("d")).asString().orElseThrow());
+        assertEquals("1", result.merged().childValue("a").orElseThrow().asString().orElseThrow());
+        assertEquals("overwritten", result.merged().childValue("b").orElseThrow().asString().orElseThrow());
+        assertEquals("3", result.merged().childValue("c").orElseThrow().asString().orElseThrow());
+        assertEquals("4", result.merged().childValue("d").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -223,13 +220,13 @@ class ConfigMergerTest {
 
         MergeResult result = merger.merge(List.of(block1, block2, block3));
 
-        ConfigSection app = (ConfigSection) result.merged().children().get("app");
+        ConfigSection app = result.merged().childSection("app").orElseThrow();
         assertEquals(2, app.children().size());
 
-        ConfigSection db = (ConfigSection) app.children().get("db");
-        assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) db.children().get("port")).asString().orElseThrow());
+        ConfigSection db = app.childSection("db").orElseThrow();
+        assertEquals("localhost", db.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", db.childValue("port").orElseThrow().asString().orElseThrow());
 
-        assertEquals("myapp", ((ConfigValue) app.children().get("name")).asString().orElseThrow());
+        assertEquals("myapp", app.childValue("name").orElseThrow().asString().orElseThrow());
     }
 }

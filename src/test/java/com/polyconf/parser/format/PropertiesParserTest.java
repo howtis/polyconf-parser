@@ -1,8 +1,6 @@
 package com.polyconf.parser.format;
 
-import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
-import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +18,7 @@ class PropertiesParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
-        ConfigNode node = result.children().get("key");
-        assertInstanceOf(ConfigValue.class, node);
-        assertEquals("value", ((ConfigValue) node).asString().orElseThrow());
+        assertEquals("value", result.childValue("key").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -30,9 +26,7 @@ class PropertiesParserTest {
         List<String> lines = List.of("key: value");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigNode node = result.children().get("key");
-        assertNotNull(node);
-        assertEquals("value", ((ConfigValue) node).asString().orElseThrow());
+        assertEquals("value", result.childValue("key").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -45,9 +39,9 @@ class PropertiesParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(3, result.children().size());
-        assertEquals("localhost", ((ConfigValue) result.children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) result.children().get("port")).asString().orElseThrow());
-        assertEquals("true", ((ConfigValue) result.children().get("debug")).asString().orElseThrow());
+        assertEquals("localhost", result.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", result.childValue("port").orElseThrow().asString().orElseThrow());
+        assertEquals("true", result.childValue("debug").orElseThrow().asString().orElseThrow());
     }
 
 
@@ -67,7 +61,7 @@ class PropertiesParserTest {
         List<String> lines = List.of("key = value");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
+        assertEquals("value", result.childValue("key").orElseThrow().asString().orElseThrow());
     }
 
 
@@ -76,7 +70,7 @@ class PropertiesParserTest {
         List<String> lines = List.of("message = Hello World");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("Hello World", ((ConfigValue) result.children().get("message")).asString().orElseThrow());
+        assertEquals("Hello World", result.childValue("message").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -84,7 +78,7 @@ class PropertiesParserTest {
         List<String> lines = List.of("url=http://example.com?a=1&b=2");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("http://example.com?a=1&b=2", ((ConfigValue) result.children().get("url")).asString().orElseThrow());
+        assertEquals("http://example.com?a=1&b=2", result.childValue("url").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -95,7 +89,7 @@ class PropertiesParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("Hello   World", ((ConfigValue) result.children().get("message")).asString().orElseThrow());
+        assertEquals("Hello   World", result.childValue("message").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -103,9 +97,9 @@ class PropertiesParserTest {
         List<String> lines = List.of("server.host=localhost", "server.port=5432");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection server = (ConfigSection) result.children().get("server");
-        assertEquals("localhost", ((ConfigValue) server.children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) server.children().get("port")).asString().orElseThrow());
+        ConfigSection server = result.childSection("server").orElseThrow();
+        assertEquals("localhost", server.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", server.childValue("port").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -113,9 +107,9 @@ class PropertiesParserTest {
         List<String> lines = List.of("a.b.c=value");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection a = (ConfigSection) result.children().get("a");
-        ConfigSection b = (ConfigSection) a.children().get("b");
-        assertEquals("value", ((ConfigValue) b.children().get("c")).asString().orElseThrow());
+        ConfigSection a = result.childSection("a").orElseThrow();
+        ConfigSection b = a.childSection("b").orElseThrow();
+        assertEquals("value", b.childValue("c").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -127,10 +121,8 @@ class PropertiesParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
         // 'a' should now be a section, not a value; 'hello' is lost
-        ConfigNode a = result.children().get("a");
-        assertInstanceOf(ConfigSection.class, a);
-        ConfigSection aSection = (ConfigSection) a;
-        assertEquals("world", ((ConfigValue) aSection.children().get("b")).asString().orElseThrow());
+        ConfigSection aSection = result.childSection("a").orElseThrow();
+        assertEquals("world", aSection.childValue("b").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -141,9 +133,7 @@ class PropertiesParserTest {
                 "a=flat"
         );
         ConfigSection result = parser.parse(lines).section();
-        ConfigNode a = result.children().get("a");
-        assertInstanceOf(ConfigValue.class, a);
-        assertEquals("flat", ((ConfigValue) a).asString().orElseThrow());
+        assertEquals("flat", result.childValue("a").orElseThrow().asString().orElseThrow());
     }
 
     @Test

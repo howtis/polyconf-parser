@@ -1,9 +1,7 @@
 package com.polyconf.parser.format;
 
 import com.polyconf.parser.model.ConfigList;
-import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
-import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +18,9 @@ class XmlParserTest {
         List<String> lines = List.of("<root><name>hello</name></root>");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection root = (ConfigSection) result.children().get("root");
-        ConfigSection name = (ConfigSection) root.children().get("name");
-        assertEquals("hello", ((ConfigValue) name.children().get("#text")).asString().orElseThrow());
+        ConfigSection root = result.childSection("root").orElseThrow();
+        ConfigSection name = root.childSection("name").orElseThrow();
+        assertEquals("hello", name.childValue("#text").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -30,10 +28,10 @@ class XmlParserTest {
         List<String> lines = List.of("<root><db host=\"localhost\" port=\"5432\"/></root>");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection root = (ConfigSection) result.children().get("root");
-        ConfigSection db = (ConfigSection) root.children().get("db");
-        assertEquals("localhost", ((ConfigValue) db.children().get("@host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) db.children().get("@port")).asString().orElseThrow());
+        ConfigSection root = result.childSection("root").orElseThrow();
+        ConfigSection db = root.childSection("db").orElseThrow();
+        assertEquals("localhost", db.childValue("@host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", db.childValue("@port").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -41,10 +39,10 @@ class XmlParserTest {
         List<String> lines = List.of("<config><database><host>localhost</host></database></config>");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection config = (ConfigSection) result.children().get("config");
-        ConfigSection database = (ConfigSection) config.children().get("database");
-        ConfigSection host = (ConfigSection) database.children().get("host");
-        assertEquals("localhost", ((ConfigValue) host.children().get("#text")).asString().orElseThrow());
+        ConfigSection config = result.childSection("config").orElseThrow();
+        ConfigSection database = config.childSection("database").orElseThrow();
+        ConfigSection host = database.childSection("host").orElseThrow();
+        assertEquals("localhost", host.childValue("#text").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -52,11 +50,11 @@ class XmlParserTest {
         List<String> lines = List.of("<root><item>a</item><item>b</item></root>");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection root = (ConfigSection) result.children().get("root");
-        ConfigList items = (ConfigList) root.children().get("item");
+        ConfigSection root = result.childSection("root").orElseThrow();
+        ConfigList items = root.childList("item").orElseThrow();
         assertEquals(2, items.items().size());
         ConfigSection first = (ConfigSection) items.items().get(0);
-        assertEquals("a", ((ConfigValue) first.children().get("#text")).asString().orElseThrow());
+        assertEquals("a", first.childValue("#text").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -68,8 +66,8 @@ class XmlParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection root = (ConfigSection) result.children().get("root");
-        assertNotNull(root.children().get("key"));
+        ConfigSection root = result.childSection("root").orElseThrow();
+        assertTrue(root.children().containsKey("key"));
     }
 
     @Test
@@ -77,10 +75,10 @@ class XmlParserTest {
         List<String> lines = List.of("<root><parent>text<child>val</child></parent></root>");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection root = (ConfigSection) result.children().get("root");
-        ConfigSection parent = (ConfigSection) root.children().get("parent");
-        assertEquals("text", ((ConfigValue) parent.children().get("#text")).asString().orElseThrow());
-        assertNotNull(parent.children().get("child"));
+        ConfigSection root = result.childSection("root").orElseThrow();
+        ConfigSection parent = root.childSection("parent").orElseThrow();
+        assertEquals("text", parent.childValue("#text").orElseThrow().asString().orElseThrow());
+        assertTrue(parent.children().containsKey("child"));
     }
 
     @Test
@@ -88,10 +86,8 @@ class XmlParserTest {
         List<String> lines = List.of("<root><empty/></root>");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection root = (ConfigSection) result.children().get("root");
-        ConfigNode empty = root.children().get("empty");
-        assertNotNull(empty);
-        assertInstanceOf(ConfigSection.class, empty);
+        ConfigSection root = result.childSection("root").orElseThrow();
+        assertNotNull(root.childSection("empty").orElse(null));
     }
 
     @Test

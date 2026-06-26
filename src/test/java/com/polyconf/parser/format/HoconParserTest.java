@@ -1,6 +1,6 @@
 package com.polyconf.parser.format;
 
-import com.polyconf.parser.model.ConfigNode;
+import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.ParserResult;
@@ -21,7 +21,7 @@ class HoconParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
-        assertEquals("MyApp", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
+        assertEquals("MyApp", result.childValue("name").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -34,9 +34,9 @@ class HoconParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection app = (ConfigSection) result.children().get("app");
-        assertEquals("MyApp", ((ConfigValue) app.children().get("name")).asString().orElseThrow());
-        assertEquals(1, ((ConfigValue) app.children().get("version")).asInt().orElseThrow());
+        ConfigSection app = result.childSection("app").orElseThrow();
+        assertEquals("MyApp", app.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals(1, app.childValue("version").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -47,9 +47,9 @@ class HoconParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection app = (ConfigSection) result.children().get("app");
-        assertEquals("MyApp", ((ConfigValue) app.children().get("name")).asString().orElseThrow());
-        assertEquals("1.0", ((ConfigValue) app.children().get("version")).asString().orElseThrow());
+        ConfigSection app = result.childSection("app").orElseThrow();
+        assertEquals("MyApp", app.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals("1.0", app.childValue("version").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -60,8 +60,8 @@ class HoconParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(42, ((ConfigValue) result.children().get("int-val")).asInt().orElseThrow());
-        assertEquals(3.14, ((ConfigValue) result.children().get("float-val")).asFloat().orElseThrow(), 0.001);
+        assertEquals(42, result.childValue("int-val").orElseThrow().asInt().orElseThrow());
+        assertEquals(3.14, result.childValue("float-val").orElseThrow().asFloat().orElseThrow(), 0.001);
     }
 
     @Test
@@ -73,9 +73,9 @@ class HoconParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        assertTrue(((ConfigValue) result.children().get("enabled")).asBool().orElseThrow());
-        assertFalse(((ConfigValue) result.children().get("debug")).asBool().orElseThrow());
-        assertTrue(((ConfigValue) result.children().get("data")).isNull());
+        assertTrue(result.childValue("enabled").orElseThrow().asBool().orElseThrow());
+        assertFalse(result.childValue("debug").orElseThrow().asBool().orElseThrow());
+        assertTrue(result.childValue("data").orElseThrow().isNull());
     }
 
     @Test
@@ -83,9 +83,7 @@ class HoconParserTest {
         List<String> lines = List.of("ports = [8080, 8081, 8082]");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigNode ports = result.children().get("ports");
-        assertInstanceOf(com.polyconf.parser.model.ConfigList.class, ports);
-        com.polyconf.parser.model.ConfigList list = (com.polyconf.parser.model.ConfigList) ports;
+        ConfigList list = result.childList("ports").orElseThrow();
         assertEquals(3, list.items().size());
     }
 
@@ -101,7 +99,7 @@ class HoconParserTest {
 
         assertNotNull(pr.section());
         assertEquals("MyApp",
-                ((ConfigValue) pr.section().children().get("name")).asString().orElseThrow());
+                pr.section().childValue("name").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -115,9 +113,8 @@ class HoconParserTest {
         );
         ParserResult pr = parser.parse(lines);
 
-        ConfigNode a = pr.section().children().get("a");
         // Either a list (from last assignment) or section depending on resolution
-        assertNotNull(a);
+        assertTrue(pr.section().children().containsKey("a"));
     }
 
     @Test

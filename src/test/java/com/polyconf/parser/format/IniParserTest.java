@@ -1,6 +1,5 @@
 package com.polyconf.parser.format;
 
-import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.parse.LenientParser;
@@ -20,7 +19,7 @@ class IniParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
-        assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
+        assertEquals("value", result.childValue("key").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -32,11 +31,9 @@ class IniParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigNode db = result.children().get("database");
-        assertInstanceOf(ConfigSection.class, db);
-        ConfigSection dbSection = (ConfigSection) db;
-        assertEquals("localhost", ((ConfigValue) dbSection.children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) dbSection.children().get("port")).asString().orElseThrow());
+        ConfigSection dbSection = result.childSection("database").orElseThrow();
+        assertEquals("localhost", dbSection.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", dbSection.childValue("port").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -50,10 +47,10 @@ class IniParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(2, result.children().size());
-        ConfigSection db = (ConfigSection) result.children().get("db");
-        assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
-        ConfigSection app = (ConfigSection) result.children().get("app");
-        assertEquals("myapp", ((ConfigValue) app.children().get("name")).asString().orElseThrow());
+        ConfigSection db = result.childSection("db").orElseThrow();
+        assertEquals("localhost", db.childValue("host").orElseThrow().asString().orElseThrow());
+        ConfigSection app = result.childSection("app").orElseThrow();
+        assertEquals("myapp", app.childValue("name").orElseThrow().asString().orElseThrow());
     }
 
 
@@ -91,10 +88,10 @@ class IniParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection database = (ConfigSection) result.children().get("database");
-        ConfigSection connection = (ConfigSection) database.children().get("connection");
-        assertEquals("localhost", ((ConfigValue) connection.children().get("host")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) connection.children().get("port")).asString().orElseThrow());
+        ConfigSection database = result.childSection("database").orElseThrow();
+        ConfigSection connection = database.childSection("connection").orElseThrow();
+        assertEquals("localhost", connection.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", connection.childValue("port").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -105,10 +102,10 @@ class IniParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigSection a = (ConfigSection) result.children().get("a");
-        ConfigSection b = (ConfigSection) a.children().get("b");
-        ConfigSection c = (ConfigSection) b.children().get("c");
-        assertEquals("value", ((ConfigValue) c.children().get("key")).asString().orElseThrow());
+        ConfigSection a = result.childSection("a").orElseThrow();
+        ConfigSection b = a.childSection("b").orElseThrow();
+        ConfigSection c = b.childSection("c").orElseThrow();
+        assertEquals("value", c.childValue("key").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -121,9 +118,9 @@ class IniParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigNode db = result.children().get("db");
+        ConfigSection db = result.childSection("db").orElseThrow();
         // Bug or design: section overwrites the flat key with same name
-        assertInstanceOf(ConfigSection.class, db);
+        assertNotNull(db);
     }
 
     @Test
@@ -134,8 +131,8 @@ class IniParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
-        assertEquals("5432", ((ConfigValue) result.children().get("port")).asString().orElseThrow());
+        assertEquals("value", result.childValue("key").orElseThrow().asString().orElseThrow());
+        assertEquals("5432", result.childValue("port").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -145,7 +142,7 @@ class IniParserTest {
         );
         ConfigSection result = parser.parse(lines).section();
 
-        String val = ((ConfigValue) result.children().get("key")).asString().orElseThrow();
+        String val = result.childValue("key").orElseThrow().asString().orElseThrow();
         // ini4j includes the comment in the value since ";" is only a comment at line start
         assertTrue(val.startsWith("value"));
     }

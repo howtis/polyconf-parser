@@ -52,11 +52,10 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection author = (ConfigSection) result.section().children().get("author");
-        assertNotNull(author);
-        assertEquals("Alex", ((ConfigValue) author.children().get("name")).get());
-        assertEquals("alex@example.com", ((ConfigValue) author.children().get("email")).get());
-        assertEquals(true, ((ConfigValue) author.children().get("active")).get());
+        ConfigSection author = result.section().childSection("author").orElseThrow();
+        assertEquals("Alex", author.childValue("name").orElseThrow().get());
+        assertEquals("alex@example.com", author.childValue("email").orElseThrow().get());
+        assertEquals(true, author.childValue("active").orElseThrow().get());
     }
 
     @Test
@@ -67,11 +66,10 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection bookmarks = (ConfigSection) result.section().children().get("bookmarks");
-        assertNotNull(bookmarks);
-        assertEquals(12L, ((ConfigValue) bookmarks.children().get("0")).get());
-        assertEquals(15L, ((ConfigValue) bookmarks.children().get("1")).get());
-        assertEquals(188L, ((ConfigValue) bookmarks.children().get("2")).get());
+        ConfigSection bookmarks = result.section().childSection("bookmarks").orElseThrow();
+        assertEquals(12L, bookmarks.childValue("0").orElseThrow().get());
+        assertEquals(15L, bookmarks.childValue("1").orElseThrow().get());
+        assertEquals(188L, bookmarks.childValue("2").orElseThrow().get());
     }
 
     @Test
@@ -87,19 +85,12 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection contents = (ConfigSection) result.section().children().get("contents");
-        assertNotNull(contents);
+        ConfigSection contents = result.section().childSection("contents").orElseThrow();
 
-        ConfigSection section = (ConfigSection) contents.children().get("section");
-        assertNotNull(section);
+        ConfigSection section = contents.childSection("section").orElseThrow();
 
-        ConfigValue para1 = (ConfigValue) section.children().get("paragraph");
-        assertNotNull(para1);
-        assertEquals("This is first", para1.get());
-
-        ConfigValue para2 = (ConfigValue) section.children().get("paragraph_1");
-        assertNotNull(para2);
-        assertEquals("This is second", para2.get());
+        assertEquals("This is first", section.childValue("paragraph").orElseThrow().get());
+        assertEquals("This is second", section.childValue("paragraph_1").orElseThrow().get());
     }
 
     @Test
@@ -114,11 +105,8 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection server = (ConfigSection) result.section().children().get("server");
-        assertNotNull(server);
-        ConfigValue host = (ConfigValue) server.children().get("host");
-        assertNotNull(host);
-        assertEquals("localhost", host.get());
+        ConfigSection server = result.section().childSection("server").orElseThrow();
+        assertEquals("localhost", server.childValue("host").orElseThrow().get());
     }
 
     @Test
@@ -132,11 +120,8 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection server = (ConfigSection) result.section().children().get("server");
-        assertNotNull(server);
-        ConfigValue host = (ConfigValue) server.children().get("host");
-        assertNotNull(host);
-        assertEquals("localhost", host.get());
+        ConfigSection server = result.section().childSection("server").orElseThrow();
+        assertEquals("localhost", server.childValue("host").orElseThrow().get());
     }
 
     @Test
@@ -150,9 +135,8 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection server = (ConfigSection) result.section().children().get("server");
-        assertNotNull(server);
-        assertEquals("localhost", ((ConfigValue) server.children().get("host")).get());
+        ConfigSection server = result.section().childSection("server").orElseThrow();
+        assertEquals("localhost", server.childValue("host").orElseThrow().get());
     }
 
     @Test
@@ -163,12 +147,11 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection settings = (ConfigSection) result.section().children().get("settings");
-        assertNotNull(settings);
-        assertEquals(true, ((ConfigValue) settings.children().get("debug")).get());
-        assertEquals(false, ((ConfigValue) settings.children().get("verbose")).get());
-        assertNull(((ConfigValue) settings.children().get("none")).get());
-        assertTrue(((ConfigValue) settings.children().get("none")).isNull());
+        ConfigSection settings = result.section().childSection("settings").orElseThrow();
+        assertEquals(true, settings.childValue("debug").orElseThrow().get());
+        assertEquals(false, settings.childValue("verbose").orElseThrow().get());
+        assertNull(settings.childValue("none").orElseThrow().get());
+        assertTrue(settings.childValue("none").orElseThrow().isNull());
     }
 
     @Test
@@ -179,9 +162,8 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection node = (ConfigSection) result.section().children().get("node");
-        assertNotNull(node);
-        assertEquals("hello world", ((ConfigValue) node.children().get("0")).get());
+        ConfigSection node = result.section().childSection("node").orElseThrow();
+        assertEquals("hello world", node.childValue("0").orElseThrow().get());
     }
 
     @Test
@@ -224,8 +206,7 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigValue title = (ConfigValue) result.section().children().get("title");
-        assertNotNull(title);
+        ConfigValue title = result.section().childValue("title").orElseThrow();
         assertEquals("Hello-World", title.get());
     }
 
@@ -237,12 +218,11 @@ class KdlParserTest {
 
         ParserResult result = parser.parse(lines);
 
-        ConfigSection stats = (ConfigSection) result.section().children().get("stats");
-        assertNotNull(stats);
-        assertEquals(42L, ((ConfigValue) stats.children().get("count")).get());
-        assertEquals(3.14, ((ConfigValue) stats.children().get("pi")).get());
-        assertEquals(0xdeadbeefL, ((ConfigValue) stats.children().get("hex")).get());
-        assertEquals(0b1010L, ((ConfigValue) stats.children().get("bin")).get());
-        assertEquals(0755L, ((ConfigValue) stats.children().get("oct")).get());
+        ConfigSection stats = result.section().childSection("stats").orElseThrow();
+        assertEquals(42L, stats.childValue("count").orElseThrow().get());
+        assertEquals(3.14, stats.childValue("pi").orElseThrow().get());
+        assertEquals(0xdeadbeefL, stats.childValue("hex").orElseThrow().get());
+        assertEquals(0b1010L, stats.childValue("bin").orElseThrow().get());
+        assertEquals(0755L, stats.childValue("oct").orElseThrow().get());
     }
 }

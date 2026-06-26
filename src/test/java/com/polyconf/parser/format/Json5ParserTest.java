@@ -2,7 +2,6 @@ package com.polyconf.parser.format;
 
 import com.polyconf.parser.model.ConfigAccessor;
 import com.polyconf.parser.model.ConfigList;
-import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.ParserResult;
@@ -25,8 +24,8 @@ class Json5ParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(2, result.children().size());
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
-        assertEquals(42, ((ConfigValue) result.children().get("value")).asInt().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals(42, result.childValue("value").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -34,8 +33,8 @@ class Json5ParserTest {
         List<String> lines = List.of("{name: \"hello\", value: 42}");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
-        assertEquals(42, ((ConfigValue) result.children().get("value")).asInt().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals(42, result.childValue("value").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -44,8 +43,8 @@ class Json5ParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(2, result.children().size());
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
-        assertEquals(42, ((ConfigValue) result.children().get("value")).asInt().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals(42, result.childValue("value").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -54,8 +53,8 @@ class Json5ParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(2, result.children().size());
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
-        assertEquals(42, ((ConfigValue) result.children().get("value")).asInt().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals(42, result.childValue("value").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -64,8 +63,8 @@ class Json5ParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(2, result.children().size());
-        assertEquals("hello", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
-        assertEquals(42, ((ConfigValue) result.children().get("value")).asInt().orElseThrow());
+        assertEquals("hello", result.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals(42, result.childValue("value").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -73,8 +72,8 @@ class Json5ParserTest {
         List<String> lines = List.of("{name: 'hello world', flag: 'active'}");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("hello world", ((ConfigValue) result.children().get("name")).asString().orElseThrow());
-        assertEquals("active", ((ConfigValue) result.children().get("flag")).asString().orElseThrow());
+        assertEquals("hello world", result.childValue("name").orElseThrow().asString().orElseThrow());
+        assertEquals("active", result.childValue("flag").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -82,9 +81,9 @@ class Json5ParserTest {
         List<String> lines = List.of("{active: true, data: null, inactive: false}");
         ConfigSection result = parser.parse(lines).section();
 
-        assertTrue(((ConfigValue) result.children().get("active")).asBool().orElseThrow());
-        assertTrue(((ConfigValue) result.children().get("data")).isNull());
-        assertFalse(((ConfigValue) result.children().get("inactive")).asBool().orElseThrow());
+        assertTrue(result.childValue("active").orElseThrow().asBool().orElseThrow());
+        assertTrue(result.childValue("data").orElseThrow().isNull());
+        assertFalse(result.childValue("inactive").orElseThrow().asBool().orElseThrow());
     }
 
     @Test
@@ -92,7 +91,7 @@ class Json5ParserTest {
         List<String> lines = List.of("{value: 0xFF}");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals(255, ((ConfigValue) result.children().get("value")).asInt().orElseThrow());
+        assertEquals(255, result.childValue("value").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -100,7 +99,7 @@ class Json5ParserTest {
         List<String> lines = List.of("{value: Infinity}");
         ConfigSection result = parser.parse(lines).section();
 
-        double v = ((ConfigValue) result.children().get("value")).asFloat().orElseThrow();
+        double v = result.childValue("value").orElseThrow().asFloat().orElseThrow();
         assertEquals(Double.POSITIVE_INFINITY, v);
     }
 
@@ -109,7 +108,7 @@ class Json5ParserTest {
         List<String> lines = List.of("{value: -Infinity}");
         ConfigSection result = parser.parse(lines).section();
 
-        double v = ((ConfigValue) result.children().get("value")).asFloat().orElseThrow();
+        double v = result.childValue("value").orElseThrow().asFloat().orElseThrow();
         assertEquals(Double.NEGATIVE_INFINITY, v);
     }
 
@@ -120,11 +119,9 @@ class Json5ParserTest {
         List<String> lines = List.of("{db: {host: 'localhost', port: 5432}}");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigNode db = result.children().get("db");
-        assertInstanceOf(ConfigSection.class, db);
-        ConfigSection dbSection = (ConfigSection) db;
-        assertEquals("localhost", ((ConfigValue) dbSection.children().get("host")).asString().orElseThrow());
-        assertEquals(5432, ((ConfigValue) dbSection.children().get("port")).asInt().orElseThrow());
+        ConfigSection dbSection = result.childSection("db").orElseThrow();
+        assertEquals("localhost", dbSection.childValue("host").orElseThrow().asString().orElseThrow());
+        assertEquals(5432, dbSection.childValue("port").orElseThrow().asInt().orElseThrow());
     }
 
     @Test
@@ -132,9 +129,7 @@ class Json5ParserTest {
         List<String> lines = List.of("{items: [1, 2, 3]}");
         ConfigSection result = parser.parse(lines).section();
 
-        ConfigNode items = result.children().get("items");
-        assertInstanceOf(ConfigList.class, items);
-        ConfigList list = (ConfigList) items;
+        ConfigList list = result.childList("items").orElseThrow();
         assertEquals(3, list.items().size());
         assertEquals(1, ((ConfigValue) list.items().get(0)).asInt().orElseThrow());
         assertEquals(3, ((ConfigValue) list.items().get(2)).asInt().orElseThrow());
@@ -145,7 +140,7 @@ class Json5ParserTest {
         List<String> lines = List.of("[1, 2, 3,]");
         ParserResult pr = parser.parse(lines);
 
-        ConfigList root = (ConfigList) pr.section().children().get("root");
+        ConfigList root = pr.section().childList("root").orElseThrow();
         assertEquals(3, root.items().size());
     }
 
@@ -154,7 +149,7 @@ class Json5ParserTest {
         List<String> lines = List.of("[1, 2, 3]");
         ParserResult pr = parser.parse(lines);
 
-        ConfigList root = (ConfigList) pr.section().children().get("root");
+        ConfigList root = pr.section().childList("root").orElseThrow();
         assertEquals(3, root.items().size());
     }
 
@@ -163,10 +158,10 @@ class Json5ParserTest {
         List<String> lines = List.of("[{name: 'a'}, {name: 'b'}]");
         ParserResult pr = parser.parse(lines);
 
-        ConfigList root = (ConfigList) pr.section().children().get("root");
+        ConfigList root = pr.section().childList("root").orElseThrow();
         assertEquals(2, root.items().size());
         ConfigSection first = (ConfigSection) root.items().get(0);
-        assertEquals("a", ((ConfigValue) first.children().get("name")).asString().orElseThrow());
+        assertEquals("a", first.childValue("name").orElseThrow().asString().orElseThrow());
     }
 
     // --- Edge cases ---
@@ -207,7 +202,7 @@ class Json5ParserTest {
         List<String> lines = List.of("{url: 'https://example.com'}");
         ConfigSection result = parser.parse(lines).section();
 
-        assertEquals("https://example.com", ((ConfigValue) result.children().get("url")).asString().orElseThrow());
+        assertEquals("https://example.com", result.childValue("url").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -220,7 +215,7 @@ class Json5ParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         assertEquals(1, result.children().size());
-        assertEquals("value", ((ConfigValue) result.children().get("key")).asString().orElseThrow());
+        assertEquals("value", result.childValue("key").orElseThrow().asString().orElseThrow());
     }
 
     @Test
@@ -241,20 +236,20 @@ class Json5ParserTest {
         ConfigSection result = parser.parse(lines).section();
 
         // records array
-        ConfigList records = (ConfigList) result.children().get("records");
+        ConfigList records = result.childList("records").orElseThrow();
         assertEquals(2, records.items().size());
 
         ConfigSection first = (ConfigSection) records.items().get(0);
-        assertEquals(1, ((ConfigValue) first.children().get("id")).asInt().orElseThrow());
-        assertEquals("Alice", ((ConfigValue) first.children().get("name")).asString().orElseThrow());
-        assertTrue(((ConfigValue) first.children().get("active")).asBool().orElseThrow());
+        assertEquals(1, first.childValue("id").orElseThrow().asInt().orElseThrow());
+        assertEquals("Alice", first.childValue("name").orElseThrow().asString().orElseThrow());
+        assertTrue(first.childValue("active").orElseThrow().asBool().orElseThrow());
 
-        ConfigList firstTags = (ConfigList) first.children().get("tags");
+        ConfigList firstTags = first.childList("tags").orElseThrow();
         assertEquals(2, firstTags.items().size());
 
         // metadata
-        ConfigSection metadata = (ConfigSection) result.children().get("metadata");
-        assertEquals("2024-01-15T10:30:00Z", ((ConfigValue) metadata.children().get("exported")).asString().orElseThrow());
-        assertEquals(3, ((ConfigValue) metadata.children().get("count")).asInt().orElseThrow());
+        ConfigSection metadata = result.childSection("metadata").orElseThrow();
+        assertEquals("2024-01-15T10:30:00Z", metadata.childValue("exported").orElseThrow().asString().orElseThrow());
+        assertEquals(3, metadata.childValue("count").orElseThrow().asInt().orElseThrow());
     }
 }
