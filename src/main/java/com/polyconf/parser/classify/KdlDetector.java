@@ -8,6 +8,13 @@ public final class KdlDetector extends FormatDetector {
         int score = 0;
         if (tokens.isEmpty()) return score;
 
+        // Lines starting with # are comments in many non-KDL formats
+        // (TOML, INI, YAML, Properties, Dotenv). KDL uses // and /- for comments.
+        // Do not award KDL score for these lines.
+        if (!tokens.isEmpty() && tokens.get(0).text().equals("#")) {
+            return 0;
+        }
+
         // KDL identifiers can contain - and other special chars.
         // Check for slashdash comment: /- (characteristic KDL feature)
         for (Token t : tokens) {
@@ -100,9 +107,7 @@ public final class KdlDetector extends FormatDetector {
                 if (stripped.contains("/-")
                         || stripped.contains("#true")
                         || stripped.contains("#false")
-                        || stripped.contains("#null")
-                        || stripped.contains("=\"")
-                        || stripped.contains("='")) {
+                        || stripped.contains("#null")) {
                     hasKdlSignal = true;
                 }
             }
