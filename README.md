@@ -6,32 +6,35 @@ A Java library that parses **polyglot configuration files** — files containing
 
 ### Supported Formats
 
-TOML · YAML · JSON · JSON5 · Properties · INI · Dotenv · XML · HOCON
+TOML · YAML · JSON · JSON5 · KDL · Properties · INI · Dotenv · XML · HOCON
 
 ### How It Works
 
-`polyconf-parser` segments input content into blocks, auto-detects each block's format, and parses them individually. Results are merged into a unified configuration model.
+`polyconf-parser` splits input into segments, auto-detects each segment's format via a two-pass classifier, then parses with the appropriate lenient parser.
 
-Two core constraints:
-- **One format per line** — each line belongs to exactly one format; a line cannot contain tokens from multiple formats.
-- **Contiguous blocks** — once a format begins, all successive lines belong to that format until the next format block starts. Blocks do not interleave.
+#### Core Principles
 
-- **Auto-detection** — each block's format is inferred from its content
-- **Hints** — explicit `# @format TOML` markers to override detection
-- **Lenient parsing** — extracts as much valid config as possible, with diagnostics for unrecognized sections
-- **Merge policies** — configurable strategies for resolving overlapping keys across blocks
+- **Best-effort over perfection** — returns partial results with diagnostics rather than failing
+- **Lenient parsing** — never throws on invalid input (except null); unrecognized content becomes diagnostics
+- **Diagnostic transparency** — every block result includes format, confidence, and any issues found
+- **Confidence model** — hinted blocks = 1.0, classified = 1.0, trial-and-error = 0.5, fallback = 0.0
+
+#### Constraints
+
+- **One format per segment** — each contiguous block belongs to a single format; format boundaries are detected automatically
+- **Contiguous blocks** — formats do not interleave within a segment
 
 ### Requirements
 
 - Java 17+
-- Gradle (wrapper included)
 
-### Building
+### Building & Testing
 
 ```bash
-./gradlew build
+./gradlew build     # compile, run tests, generate JaCoCo coverage report
+./gradlew test      # run tests only
 ```
 
 ### Status
 
-This project is a **work in progress**. Core parsing and format detection are implemented, but the public API, merge semantics, and test coverage are still evolving. Breaking changes are expected.
+The public API is stabilizing but breaking changes are still possible.
