@@ -19,6 +19,7 @@ import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.ValueType;
 import com.polyconf.parser.parse.LenientParser;
+import com.polyconf.parser.parse.ValueInference;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -172,27 +173,17 @@ public final class JsonFormat {
             }
 
             JsonPrimitive primitive = element.getAsJsonPrimitive();
-            ValueType type = ValueType.STRING;
             Object rawValue;
 
             if (primitive.isBoolean()) {
-                type = ValueType.BOOLEAN;
                 rawValue = primitive.getAsBoolean();
             } else if (primitive.isNumber()) {
-                Number num = primitive.getAsNumber();
-                if (num.doubleValue() == num.longValue()) {
-                    type = ValueType.INTEGER;
-                    rawValue = num.longValue();
-                } else {
-                    type = ValueType.FLOAT;
-                    rawValue = num.doubleValue();
-                }
+                rawValue = primitive.getAsNumber();
             } else {
-                type = ValueType.STRING;
                 rawValue = primitive.getAsString();
             }
 
-            return new ConfigValue(key, rawValue, type, null, "");
+            return ValueInference.createValue(key, rawValue, null);
         }
     }
 }

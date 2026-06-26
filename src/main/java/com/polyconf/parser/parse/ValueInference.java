@@ -10,23 +10,13 @@ public final class ValueInference {
     }
 
     public static ConfigValue createValue(String key, String raw, Provenance provenance) {
-        if (raw.isEmpty()) {
-            return new ConfigValue(key, "", ValueType.STRING, provenance, "");
-        }
-        // Boolean
-        if ("true".equalsIgnoreCase(raw) || "false".equalsIgnoreCase(raw)) {
-            return new ConfigValue(key, Boolean.parseBoolean(raw), ValueType.BOOLEAN, provenance, "");
-        }
-        // Integer
-        try {
-            return new ConfigValue(key, Long.parseLong(raw), ValueType.INTEGER, provenance, "");
-        } catch (NumberFormatException ignored) {
-        }
-        // Float
-        try {
-            return new ConfigValue(key, Double.parseDouble(raw), ValueType.FLOAT, provenance, "");
-        } catch (NumberFormatException ignored) {
-        }
         return new ConfigValue(key, raw, ValueType.STRING, provenance, "");
+    }
+
+    public static ConfigValue createValue(String key, Object value, Provenance provenance) {
+        if (value == null) {
+            return new ConfigValue(key, null, ValueType.NULL, provenance, "");
+        }
+        return new ConfigValue(key, value.toString(), ValueType.STRING, provenance, "");
     }
 }

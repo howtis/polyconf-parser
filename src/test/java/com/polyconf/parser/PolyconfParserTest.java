@@ -189,7 +189,7 @@ class PolyconfParserTest {
         assertFalse(result.hasWarnings());
         assertEquals(1, result.blocks().size());
         assertEquals("value", result.flattened().get("key"));
-        assertEquals(10L, result.flattened().get("count"));
+        assertEquals("10", result.flattened().get("count"));
     }
 
     @Test
@@ -234,7 +234,7 @@ class PolyconfParserTest {
         ParseResult result = parser.parse(lines);
 
         assertFalse(result.hasWarnings());
-        assertEquals(9090L, result.flattened().get("server.port"));
+        assertEquals("9090", result.flattened().get("server.port"));
     }
 
     @Test
@@ -249,7 +249,7 @@ class PolyconfParserTest {
         ParseResult result = parser.parse(lines);
 
         assertEquals("test", result.flattened().get("app.name"));
-        assertEquals(true, result.flattened().get("app.debug"));
+        assertEquals("true", result.flattened().get("app.debug"));
     }
 
 
@@ -271,7 +271,7 @@ class PolyconfParserTest {
 
         assertEquals(1, result.blocks().size());
         assertEquals(Format.TOML, result.blocks().get(0).detectedFormat());
-        assertEquals(8080L, result.flattened().get("server.port"));
+        assertEquals("8080", result.flattened().get("server.port"));
     }
 
     @Test

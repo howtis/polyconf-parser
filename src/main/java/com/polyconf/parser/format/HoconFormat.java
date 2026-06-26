@@ -10,8 +10,8 @@ import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
-import com.polyconf.parser.model.ValueType;
 import com.polyconf.parser.parse.LenientParser;
+import com.polyconf.parser.parse.ValueInference;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -165,21 +165,12 @@ public final class HoconFormat {
                     }
                     return new ConfigList(key, items, null, "");
                 }
-                case STRING:
-                    return new ConfigValue(key, value.unwrapped(), ValueType.STRING, null, "");
-                case NUMBER: {
-                    Number num = (Number) value.unwrapped();
-                    if (num.doubleValue() == num.longValue()) {
-                        return new ConfigValue(key, num.longValue(), ValueType.INTEGER, null, "");
-                    }
-                    return new ConfigValue(key, num.doubleValue(), ValueType.FLOAT, null, "");
-                }
-                case BOOLEAN:
-                    return new ConfigValue(key, value.unwrapped(), ValueType.BOOLEAN, null, "");
                 case NULL:
-                    return new ConfigValue(key, null, ValueType.NULL, null, "");
+                case STRING:
+                case BOOLEAN:
+                case NUMBER:
                 default:
-                    return new ConfigValue(key, value.unwrapped(), ValueType.STRING, null, "");
+                    return ValueInference.createValue(key, value.unwrapped(), null);
             }
         }
     }

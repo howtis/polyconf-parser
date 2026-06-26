@@ -20,11 +20,11 @@ class HoconResourceTest extends ResourceTestBase {
         assertEquals("1.0.0", f.get("app.version"));
         assertEquals("A polyglot configuration parser", f.get("app.description"));
         assertEquals("0.0.0.0", f.get("app.server.host"));
-        assertEquals(8080L, f.get("app.server.port"));
+        assertEquals("8080", f.get("app.server.port"));
         assertEquals("localhost", f.get("database.host"));
-        assertEquals(5432L, f.get("database.port"));
+        assertEquals("5432", f.get("database.port"));
         assertEquals("myapp", f.get("database.name"));
-        assertEquals(10L, f.get("database.pool-size"));
+        assertEquals("10", f.get("database.pool-size"));
     }
 
     @Test
@@ -36,9 +36,9 @@ class HoconResourceTest extends ResourceTestBase {
         assertEquals("INFO", f.get("akka.loglevel"));
         assertEquals("WARN", f.get("akka.stdout-loglevel"));
         assertEquals("cluster", f.get("akka.actor.provider"));
-        assertEquals(10L, f.get("akka.actor.deployment./worker.nr-of-instances"));
+        assertEquals("10", f.get("akka.actor.deployment./worker.nr-of-instances"));
         assertEquals("127.0.0.1", f.get("akka.remote.artery.canonical.hostname"));
-        assertEquals(25520L, f.get("akka.remote.artery.canonical.port"));
+        assertEquals("25520", f.get("akka.remote.artery.canonical.port"));
     }
 
     @Test
@@ -48,17 +48,17 @@ class HoconResourceTest extends ResourceTestBase {
         assertFormat(r, Format.HOCON, "config.hocon");
         Map<String, Object> f = r.flattened();
         assertEquals("0.0.0.0", f.get("server.host"));
-        assertEquals(8080L, f.get("server.port"));
-        assertEquals(false, f.get("server.debug"));
+        assertEquals("8080", f.get("server.port"));
+        assertEquals("false", f.get("server.debug"));
         assertEquals("localhost", f.get("database.host"));
-        assertEquals(5432L, f.get("database.port"));
+        assertEquals("5432", f.get("database.port"));
         assertEquals("myapp", f.get("database.name"));
-        assertEquals(10L, f.get("database.pool-size"));
+        assertEquals("10", f.get("database.pool-size"));
         assertEquals("admin", f.get("database.credentials.username"));
         assertEquals("secret", f.get("database.credentials.password"));
-        assertEquals(3.14, (Double) f.get("features.pi"), 0.001);
-        assertEquals(30000L, f.get("features.timeout-ms"));
-        assertEquals(1000L, f.get("features.rate-limit.max-requests"));
-        assertEquals(60L, f.get("features.rate-limit.window-seconds"));
+        assertEquals("3.14", f.get("features.pi"));
+        assertEquals("30000", f.get("features.timeout-ms"));
+        assertEquals("1000", f.get("features.rate-limit.max-requests"));
+        assertEquals("60", f.get("features.rate-limit.window-seconds"));
     }
 }

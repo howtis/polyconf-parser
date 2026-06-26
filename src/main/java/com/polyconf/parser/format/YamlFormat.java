@@ -12,6 +12,7 @@ import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.ValueType;
 import com.polyconf.parser.parse.LenientParser;
+import com.polyconf.parser.parse.ValueInference;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.ArrayList;
@@ -202,20 +203,10 @@ public final class YamlFormat {
                 }
                 return new ConfigList(key, items, null, "");
             }
-            return convertScalar(key, value);
-        }
-
-        private ConfigValue convertScalar(String key, Object value) {
-            if (value instanceof Boolean) {
-                return new ConfigValue(key, value, ValueType.BOOLEAN, null, "");
-            }
-            if (value instanceof Integer || value instanceof Long) {
-                return new ConfigValue(key, ((Number) value).longValue(), ValueType.INTEGER, null, "");
-            }
             if (value instanceof Double || value instanceof Float) {
                 return new ConfigValue(key, value, ValueType.FLOAT, null, "");
             }
-            return new ConfigValue(key, value.toString(), ValueType.STRING, null, "");
+            return ValueInference.createValue(key, value, null);
         }
     }
 }

@@ -17,12 +17,12 @@ class JsonResourceTest extends ResourceTestBase {
         assertFormat(r, Format.JSON, "config.json");
         Map<String, Object> f = r.flattened();
         assertEquals("0.0.0.0", f.get("server.host"));
-        assertEquals(8080L, f.get("server.port"));
-        assertEquals(false, f.get("server.debug"));
+        assertEquals("8080", f.get("server.port"));
+        assertEquals("false", f.get("server.debug"));
         assertEquals("localhost", f.get("database.host"));
-        assertEquals(5432L, f.get("database.port"));
+        assertEquals("5432", f.get("database.port"));
         assertEquals("myapp", f.get("database.name"));
-        assertEquals(10L, f.get("database.pool_size"));
+        assertEquals("10", f.get("database.pool_size"));
     }
 
     @Test
@@ -31,7 +31,7 @@ class JsonResourceTest extends ResourceTestBase {
         assertNoErrors(r, "manifest.json");
         assertFormat(r, Format.JSON, "manifest.json");
         Map<String, Object> f = r.flattened();
-        assertEquals(3L, f.get("manifest_version"));
+        assertEquals("3", f.get("manifest_version"));
         assertEquals("My Extension", f.get("name"));
         assertEquals("1.0.0", f.get("version"));
         assertEquals("A browser extension example", f.get("description"));
@@ -62,8 +62,8 @@ class JsonResourceTest extends ResourceTestBase {
         Map<String, Object> f = r.flattened();
         assertEquals("ES2022", f.get("compilerOptions.target"));
         assertEquals("NodeNext", f.get("compilerOptions.module"));
-        assertEquals(true, f.get("compilerOptions.strict"));
-        assertEquals(true, f.get("compilerOptions.sourceMap"));
+        assertEquals("true", f.get("compilerOptions.strict"));
+        assertEquals("true", f.get("compilerOptions.sourceMap"));
         assertEquals("./dist", f.get("compilerOptions.outDir"));
         assertEquals("./src", f.get("compilerOptions.rootDir"));
         assertEquals("src/**/*.ts", f.get("include[0]"));

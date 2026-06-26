@@ -196,9 +196,9 @@ class Json5ParserTest {
         String json5 = "{ records: [ { id: 1, name: 'Alice' }, { id: 2, name: 'Bob' } ] }";
         ParserResult pr = parser.parse(List.of(json5));
         var f = new ConfigAccessor(pr.section()).asFlattenedMap();
-        assertEquals(1L, f.get("records[0].id"));
+        assertEquals("1", f.get("records[0].id"));
         assertEquals("Alice", f.get("records[0].name"));
-        assertEquals(2L, f.get("records[1].id"));
+        assertEquals("2", f.get("records[1].id"));
         assertEquals("Bob", f.get("records[1].name"));
     }
 

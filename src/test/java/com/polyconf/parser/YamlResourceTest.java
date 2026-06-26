@@ -17,7 +17,7 @@ class YamlResourceTest extends ResourceTestBase {
         assertFormat(r, Format.YAML, "simple.yaml");
         Map<String, Object> f = r.flattened();
         assertEquals("simple-yaml", f.get("name"));
-        assertEquals(1L, f.get("version"));
+        assertEquals("1", f.get("version"));
         assertEquals("Jane Smith", f.get("author"));
     }
 
@@ -28,17 +28,17 @@ class YamlResourceTest extends ResourceTestBase {
         assertFormat(r, Format.YAML, "server.yaml");
         Map<String, Object> f = r.flattened();
         assertEquals("0.0.0.0", f.get("server.host"));
-        assertEquals(8080L, f.get("server.port"));
-        assertEquals(false, f.get("server.debug"));
+        assertEquals("8080", f.get("server.port"));
+        assertEquals("false", f.get("server.debug"));
         assertEquals("localhost", f.get("database.host"));
-        assertEquals(5432L, f.get("database.port"));
+        assertEquals("5432", f.get("database.port"));
         assertEquals("myapp", f.get("database.name"));
         assertEquals("admin", f.get("database.credentials.username"));
         assertEquals("secret", f.get("database.credentials.password"));
         assertEquals("a.example.com", f.get("servers[0].host"));
         assertEquals("b.example.com", f.get("servers[1].host"));
         assertEquals(3.14, (Double) f.get("features.pi"), 0.001);
-        assertEquals(1000L, f.get("features.rate_limit.max_requests"));
+        assertEquals("1000", f.get("features.rate_limit.max_requests"));
     }
 
     @Test
@@ -50,24 +50,24 @@ class YamlResourceTest extends ResourceTestBase {
         assertEquals("myapp", f.get("app.name"));
         assertEquals("2.1.0", f.get("app.version"));
         assertEquals("production", f.get("app.environment"));
-        assertEquals(8080L, f.get("server.port"));
-        assertEquals(true, f.get("server.ssl.enabled"));
-        assertEquals(4L, f.get("server.workers"));
+        assertEquals("8080", f.get("server.port"));
+        assertEquals("true", f.get("server.ssl.enabled"));
+        assertEquals("4", f.get("server.workers"));
         assertEquals("db-primary.example.com", f.get("database.primary.host"));
-        assertEquals(5432L, f.get("database.primary.port"));
-        assertEquals(5L, f.get("database.primary.pool.min"));
-        assertEquals(20L, f.get("database.primary.pool.max"));
+        assertEquals("5432", f.get("database.primary.port"));
+        assertEquals("5", f.get("database.primary.pool.min"));
+        assertEquals("20", f.get("database.primary.pool.max"));
         assertEquals("db-replica.example.com", f.get("database.replica.host"));
         assertEquals("redis.example.com", f.get("cache.redis.host"));
-        assertEquals(6379L, f.get("cache.redis.port"));
-        assertEquals(true, f.get("features.auth.enabled"));
+        assertEquals("6379", f.get("cache.redis.port"));
+        assertEquals("true", f.get("features.auth.enabled"));
         assertTrue(((String) f.get("features.auth.providers[0]")).contains("google"));
         assertEquals("info", f.get("features.logging.level"));
-        assertEquals(true, f.get("features.metrics.enabled"));
-        assertEquals(true, f.get("rate_limit.enabled"));
-        assertEquals(100L, f.get("rate_limit.default.requests"));
+        assertEquals("true", f.get("features.metrics.enabled"));
+        assertEquals("true", f.get("rate_limit.enabled"));
+        assertEquals("100", f.get("rate_limit.default.requests"));
         assertEquals("smtp.example.com", f.get("notifications.email.smtp.host"));
-        assertEquals(587L, f.get("notifications.email.smtp.port"));
+        assertEquals("587", f.get("notifications.email.smtp.port"));
     }
 
     @Test
@@ -107,7 +107,7 @@ class YamlResourceTest extends ResourceTestBase {
         assertEquals("Deployment", f.get("kind"));
         assertEquals("nginx-deployment", f.get("metadata.name"));
         assertEquals("production", f.get("metadata.namespace"));
-        assertEquals(3L, f.get("spec.replicas"));
+        assertEquals("3", f.get("spec.replicas"));
         assertEquals("RollingUpdate", f.get("spec.strategy.type"));
         assertEquals("nginx:1.25-alpine", f.get("spec.template.spec.containers[0].image"));
     }
@@ -119,8 +119,8 @@ class YamlResourceTest extends ResourceTestBase {
         assertFormat(r, Format.YAML, "spring-boot.yaml");
         Map<String, Object> f = r.flattened();
         assertEquals("order-service", f.get("spring.application.name"));
-        assertEquals(20L, f.get("spring.datasource.hikari.maximum-pool-size"));
-        assertEquals(5L, f.get("spring.datasource.hikari.minimum-idle"));
+        assertEquals("20", f.get("spring.datasource.hikari.maximum-pool-size"));
+        assertEquals("5", f.get("spring.datasource.hikari.minimum-idle"));
         assertEquals("validate", f.get("spring.jpa.hibernate.ddl-auto"));
         assertEquals("redis", f.get("spring.cache.type"));
         assertEquals("INFO", f.get("logging.level.root"));

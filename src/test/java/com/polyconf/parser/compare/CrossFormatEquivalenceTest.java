@@ -97,7 +97,7 @@ class CrossFormatEquivalenceTest {
         assertEquals(String.valueOf(tomlMap.get("database.host")), String.valueOf(propsMap.get("database.host")));
         assertEquals(String.valueOf(tomlMap.get("database.host")), String.valueOf(iniMap.get("database.host")));
 
-        // Numeric values match across all formats - Properties and INI now infer Long via shared ValueInference
+        // All values are now STRING across all formats (no type inference)
         assertEquals(tomlMap.get("database.port"), propsMap.get("database.port"));
         assertEquals(tomlMap.get("database.port"), iniMap.get("database.port"));
         assertEquals(tomlMap.get("database.port"), jsonMap.get("database.port"));
@@ -108,10 +108,10 @@ class CrossFormatEquivalenceTest {
         assertEquals(tomlMap.get("database.max_pool"), jsonMap.get("database.max_pool"));
         assertEquals(String.valueOf(tomlMap.get("database.max_pool")), String.valueOf(yamlMap.get("database.max_pool")));
 
-        // Verify Properties and INI now produce numeric types, not strings
-        assertInstanceOf(Long.class, propsMap.get("database.port"));
-        assertInstanceOf(Long.class, iniMap.get("database.port"));
-        assertInstanceOf(Long.class, propsMap.get("database.max_pool"));
-        assertInstanceOf(Long.class, iniMap.get("database.max_pool"));
+        // Verify Properties and INI now produce strings (no type inference)
+        assertInstanceOf(String.class, propsMap.get("database.port"));
+        assertInstanceOf(String.class, iniMap.get("database.port"));
+        assertInstanceOf(String.class, propsMap.get("database.max_pool"));
+        assertInstanceOf(String.class, iniMap.get("database.max_pool"));
     }
 }

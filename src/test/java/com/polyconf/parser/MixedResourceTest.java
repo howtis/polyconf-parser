@@ -21,7 +21,7 @@ class MixedResourceTest extends ResourceTestBase {
         assertEquals("DEBUG", f.get("log.level"));
         assertEquals("/var/log/app.log", f.get("log.file"));
         assertEquals("redis", f.get("cache.backend"));
-        assertEquals(300L, f.get("cache.ttl"));
+        assertEquals("300", f.get("cache.ttl"));
         assertEquals("development", f.get("NODE_ENV"));
         assertEquals("/var/data", f.get("paths.data"));
         assertEquals("/var/log", f.get("paths.logs"));
@@ -34,16 +34,16 @@ class MixedResourceTest extends ResourceTestBase {
         Map<String, Object> f = r.flattened();
         assertNotNull(f);
         assertEquals("localhost", f.get("database.host"));
-        assertEquals(5432L, f.get("database.port"));
+        assertEquals("5432", f.get("database.port"));
         assertEquals("0.0.0.0", f.get("server.host"));
-        assertEquals(8080L, f.get("server.port"));
+        assertEquals("8080", f.get("server.port"));
         assertEquals("debug", f.get("logging.level"));
-        assertEquals(3600L, f.get("cache.ttl"));
-        assertEquals(1024L, f.get("cache.maxSize"));
+        assertEquals("3600", f.get("cache.ttl"));
+        assertEquals("1024", f.get("cache.maxSize"));
         assertEquals("sk-1234567890", f.get("API_KEY"));
-        assertEquals(true, f.get("metrics.enabled"));
+        assertEquals("true", f.get("metrics.enabled"));
         assertEquals("smtp.example.com", f.get("email.smtp_host"));
-        assertEquals(587L, f.get("email.smtp_port"));
+        assertEquals("587", f.get("email.smtp_port"));
     }
 
     @Test
@@ -52,7 +52,7 @@ class MixedResourceTest extends ResourceTestBase {
         assertHasBlock(r, "hinted-mixed.txt");
         Map<String, Object> f = r.flattened();
         assertEquals("0.0.0.0", f.get("server.host"));
-        assertEquals(8080L, f.get("server.port"));
+        assertEquals("8080", f.get("server.port"));
     }
 
     @Test
@@ -64,9 +64,9 @@ class MixedResourceTest extends ResourceTestBase {
         assertEquals("order-service", f.get("app.name"));
         assertEquals("2.1.0", f.get("app.version"));
         assertEquals("3.3.0", f.get("spring.boot.version"));
-        assertEquals(20L, f.get("spring.datasource.hikari.maximum-pool-size"));
+        assertEquals("20", f.get("spring.datasource.hikari.maximum-pool-size"));
         assertEquals("postgres-primary.internal", f.get("DB_HOST"));
-        assertEquals(5432L, f.get("DB_PORT"));
+        assertEquals("5432", f.get("DB_PORT"));
         assertEquals("production", f.get("SPRING_PROFILES_ACTIVE"));
         assertTrue(f.containsKey("metrics.enabled") || f.containsKey("enabled"),
                 "unhinted metrics block should produce output");

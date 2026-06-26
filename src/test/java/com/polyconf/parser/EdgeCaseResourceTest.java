@@ -42,9 +42,9 @@ class EdgeCaseResourceTest extends ResourceTestBase {
         assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
         assertTrue(f.containsKey("key"), "key should be present");
         assertEquals("value", f.get("key"));
-        assertEquals(123L, f.get("another"));
-        assertEquals(true, f.get("enabled"));
-        assertEquals(3.14, (Double) f.get("float_val"), 0.001);
+        assertEquals("123", f.get("another"));
+        assertEquals("true", f.get("enabled"));
+        assertEquals("3.14", f.get("float_val"));
         Object quotedVal = f.get("quoted");
         assertNotNull(quotedVal, "quoted key should be present");
         assertTrue(quotedVal.toString().contains("hello world"),
@@ -140,7 +140,7 @@ class EdgeCaseResourceTest extends ResourceTestBase {
             assertEquals("myapp", f.get("name"));
             assertEquals("1.0.0", f.get("version"));
             assertEquals("localhost", f.get("database.host"));
-            assertEquals(5432L, f.get("database.port"));
+            assertEquals("5432", f.get("database.port"));
         }
     }
 
@@ -152,9 +152,9 @@ class EdgeCaseResourceTest extends ResourceTestBase {
         Map<String, Object> f = r.flattened();
         assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
         assertTrue(f.containsKey("port"), "port key should be present");
-        assertEquals(80L, f.get("port"));
+        assertEquals("0080", f.get("port"));
         assertTrue(f.containsKey("employee_id"), "employee_id key should be present");
-        assertEquals(42L, f.get("employee_id"));
+        assertEquals("00042", f.get("employee_id"));
         assertNotNull(f.get("hex_color"));
     }
 
@@ -184,8 +184,8 @@ class EdgeCaseResourceTest extends ResourceTestBase {
         assertTrue(f.containsKey("bool_string_false"), "bool_string_false should be present");
         assertTrue(f.containsKey("bool_string_yes"), "bool_string_yes should be present");
         assertTrue(f.containsKey("null_value"), "null_value key should be present");
-        assertEquals(-42L, f.get("negative_int"));
-        assertEquals(0L, f.get("zero_int"));
+        assertEquals("-42", f.get("negative_int"));
+        assertEquals("0", f.get("zero_int"));
         Object emptyVal = f.get("empty_string");
         assertNotNull(emptyVal, "empty_string should be present");
         assertTrue(emptyVal.toString().isEmpty() || emptyVal.toString().equals("\"\""),
@@ -270,9 +270,9 @@ class EdgeCaseResourceTest extends ResourceTestBase {
                 "key.with.dot should be present (literal or nested)");
         assertTrue(f.containsKey("key:with:colon") || f.toString().contains("colon"),
                 "key:with:colon should be present or colon-related value found");
-        assertEquals(1L, f.get("a"));
-        assertEquals(2L, f.get("b"));
-        assertEquals(3L, f.get("x"));
+        assertEquals("1", f.get("a"));
+        assertEquals("2", f.get("b"));
+        assertEquals("3", f.get("x"));
         assertEquals("value", f.get("/path/to/key"));
         assertTrue(f.containsKey("C:\\Windows\\System32")
                         || f.containsKey("/path/to/key"),
@@ -299,9 +299,9 @@ class EdgeCaseResourceTest extends ResourceTestBase {
         assertEquals("polyconf", f.get("app.name"));
         assertEquals("1.0.0", f.get("app.version"));
         assertEquals("0.0.0.0", f.get("server.host"));
-        assertEquals(8080L, f.get("server.port"));
+        assertEquals("8080", f.get("server.port"));
         assertEquals("localhost", f.get("database.host"));
-        assertEquals(5432L, f.get("database.port"));
+        assertEquals("5432", f.get("database.port"));
     }
 
     @Test

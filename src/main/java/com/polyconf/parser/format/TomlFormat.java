@@ -12,6 +12,7 @@ import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.ValueType;
 import com.polyconf.parser.parse.LenientParser;
+import com.polyconf.parser.parse.ValueInference;
 import org.tomlj.Toml;
 import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
@@ -168,12 +169,6 @@ public final class TomlFormat {
         }
 
         private ConfigValue convertScalar(String key, Object value) {
-            if (value instanceof Boolean) {
-                return new ConfigValue(key, value, ValueType.BOOLEAN, null, "");
-            }
-            if (value instanceof Long) {
-                return new ConfigValue(key, value, ValueType.INTEGER, null, "");
-            }
             if (value instanceof Double) {
                 return new ConfigValue(key, value, ValueType.FLOAT, null, "");
             }
@@ -183,7 +178,7 @@ public final class TomlFormat {
             if (value instanceof OffsetDateTime || value instanceof LocalDateTime) {
                 return new ConfigValue(key, value, ValueType.DATETIME, null, "");
             }
-            return new ConfigValue(key, value.toString(), ValueType.STRING, null, "");
+            return ValueInference.createValue(key, value, null);
         }
     }
 }

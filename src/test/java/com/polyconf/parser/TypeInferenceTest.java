@@ -16,7 +16,7 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:toml\nport = 5432\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(5432L, flat.get("port"));
+        assertEquals("5432", flat.get("port"));
     }
 
     @Test
@@ -24,7 +24,7 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:yaml\nport: 5432\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(5432L, flat.get("port"));
+        assertEquals("5432", flat.get("port"));
     }
 
     @Test
@@ -32,7 +32,7 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:json\n{\"port\": 5432}\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(5432L, flat.get("port"));
+        assertEquals("5432", flat.get("port"));
     }
 
     @Test
@@ -40,8 +40,8 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:toml\nenabled = true\ndebug = false\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(true, flat.get("enabled"));
-        assertEquals(false, flat.get("debug"));
+        assertEquals("true", flat.get("enabled"));
+        assertEquals("false", flat.get("debug"));
     }
 
     @Test
@@ -49,8 +49,8 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:yaml\nenabled: true\ndebug: false\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(true, flat.get("enabled"));
-        assertEquals(false, flat.get("debug"));
+        assertEquals("true", flat.get("enabled"));
+        assertEquals("false", flat.get("debug"));
     }
 
     @Test
@@ -58,8 +58,8 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:json\n{\"enabled\": true, \"debug\": false}\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(true, flat.get("enabled"));
-        assertEquals(false, flat.get("debug"));
+        assertEquals("true", flat.get("enabled"));
+        assertEquals("false", flat.get("debug"));
     }
 
     @Test
@@ -85,8 +85,7 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:json\n{\"pi\": 3.14}\n");
         Map<String, Object> flat = result.flattened();
 
-        assertInstanceOf(Double.class, flat.get("pi"));
-        assertEquals(3.14, (Double) flat.get("pi"), 0.001);
+        assertEquals("3.14", flat.get("pi"));
     }
 
     @Test
