@@ -5,13 +5,10 @@ AI coding agent instructions for the **polyconf-parser** project.
 ## Obsidian Memory
 
 This project uses an Obsidian vault (`polyconf-parser`) for cross-session memory.
-On session start, read project context, preferences, and governance documents:
+On session start, read preferences document:
 
 ```bash
 obsidian vault="polyconf-parser" read path="preferences.md"
-obsidian vault="polyconf-parser" read path="Decisions/2026-06-24 - Philosophy.md"
-obsidian vault="polyconf-parser" read path="Decisions/2026-06-24 - Limitations.md"
-obsidian vault="polyconf-parser" read path="Decisions/2026-06-24 - Policies.md"
 ```
 
 ### During Session
