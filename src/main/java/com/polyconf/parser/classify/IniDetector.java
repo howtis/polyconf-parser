@@ -36,6 +36,27 @@ public final class IniDetector extends FormatDetector {
                 score -= 1;
             }
         }
+
+        // Negative scoring: patterns that clearly belong to other formats
+        // INI uses ; for comments, not #
+        if (!tokens.isEmpty() && tokens.get(0).text().equals("#")) {
+            // # followed by content that is not a section header [section]
+            if (tokens.size() < 2 || !tokens.get(1).text().equals("[")) {
+                score -= 2;
+            }
+        }
+        // KDL-style escaped quotes
+        for (Token t : tokens) {
+            if (t.text().contains("\\\"")) {
+                score -= 3;
+                break;
+            }
+        }
+        // // comments belong to KDL, not INI
+        if (!tokens.isEmpty() && tokens.get(0).text().equals("//")) {
+            score -= 3;
+        }
+
         return score;
     }
 

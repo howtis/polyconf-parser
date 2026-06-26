@@ -13,6 +13,21 @@ public final class FormatClassifier {
     private static final Pattern HINT_LINE = Pattern.compile(
             "^\\s*#\\s*@fmt:\\w+\\s*$", Pattern.CASE_INSENSITIVE);
 
+    // Dotenv: $VARIABLE or ${VARIABLE} interpolation
+    private static final Pattern DOTENV_INTERP = Pattern.compile("\\$\\{[A-Za-z_]\\w*}|\\$[A-Za-z_]\\w*");
+
+    // Dotenv: export KEY=VALUE
+    private static final Pattern DOTENV_EXPORT = Pattern.compile("^export\\s+[A-Za-z_]\\w*\\s*=.*");
+
+    // Dotenv: URL with variable interpolation (postgres://${HOST}:${PORT}/...)
+    private static final Pattern DOTENV_VAR_URL = Pattern.compile("[a-z]+://.*\\$\\{");
+
+    // Dotenv: ALL_CAPS key with quoted value, e.g. SECRET_KEY='...' or APP_NAME="..."
+    private static final Pattern DOTENV_CAPS_QUOTED = Pattern.compile("^[A-Z_][A-Z0-9_]*\\s*=\\s*['\"]");
+
+    // Dotenv: ALL_CAPS key followed by =, e.g. DB_HOST=localhost, NODE_ENV=test
+    private static final Pattern DOTENV_CAPS_ASSIGN = Pattern.compile("^[A-Z_][A-Z0-9_]*\\s*=");
+
     private FormatClassifier() {
     }
 
@@ -34,6 +49,12 @@ public final class FormatClassifier {
         boolean hasHoconSignal = false;
         boolean hasDoubleSlashComment = false;
         boolean hasBraceBlock = false;
+        boolean hasBlockBrace = false;
+        boolean hasHoconEq = false;
+        boolean hasDotenvExport = false;
+        boolean hasDotenvInterp = false;
+        boolean hasDotenvCapsQuoted = false;
+        boolean hasDotenvCapsAssign = false;
 
         Pattern xmlClosingTag = Pattern.compile("</[a-zA-Z]");
         Pattern xmlDeclaration = Pattern.compile("<\\?xml");
@@ -55,23 +76,56 @@ public final class FormatClassifier {
                 if (stripped.contains("/-")
                         || stripped.contains("#true")
                         || stripped.contains("#false")
-                        || stripped.contains("#null")) {
+                        || stripped.contains("#null")
+                        || stripped.contains("=\"")
+                        || stripped.contains("='")) {
                     hasKdlSignal = true;
                 }
             }
             if (stripped.startsWith("//")) {
                 hasDoubleSlashComment = true;
             }
-            if (stripped.contains("{")) {
-                hasBraceBlock = true;
+            // Detect brace blocks but exclude ${ variable interpolation (Dotenv/HOCON)
+            int braceIdx = stripped.indexOf("{");
+            while (braceIdx >= 0) {
+                if (braceIdx == 0 || stripped.charAt(braceIdx - 1) != '$') {
+                    hasBraceBlock = true;
+                    if (stripped.endsWith("{")) {
+                        hasBlockBrace = true;
+                    }
+                    break;
+                }
+                braceIdx = stripped.indexOf("{", braceIdx + 1);
             }
 
+            if (!hasHoconEq && stripped.contains(" = ")) {
+                hasHoconEq = true;
+            }
             if (!hasHoconSignal) {
-                if (stripped.contains("${")
+                if (stripped.contains("${?")
                         || stripped.contains("+=")
                         || (stripped.startsWith("include")
                             && (stripped.contains("\"") || stripped.contains("'")))) {
                     hasHoconSignal = true;
+                }
+            }
+
+            if (!hasDotenvExport && DOTENV_EXPORT.matcher(stripped).matches()) {
+                hasDotenvExport = true;
+            }
+            if (!hasDotenvInterp) {
+                if (DOTENV_INTERP.matcher(stripped).find()
+                        || DOTENV_VAR_URL.matcher(stripped).find()) {
+                    hasDotenvInterp = true;
+                }
+            }
+            if (!hasDotenvCapsQuoted && DOTENV_CAPS_QUOTED.matcher(stripped).find()) {
+                hasDotenvCapsQuoted = true;
+            }
+            if (!hasDotenvCapsAssign) {
+                if (DOTENV_CAPS_ASSIGN.matcher(stripped).find()
+                        || DOTENV_EXPORT.matcher(stripped).matches()) {
+                    hasDotenvCapsAssign = true;
                 }
             }
         }
@@ -79,12 +133,23 @@ public final class FormatClassifier {
         if (xmlSignals >= 2) {
             return Format.XML;
         }
-        if ((hasKdlSignal || (hasDoubleSlashComment && hasBraceBlock))
-                && !hasHoconSignal) {
-            return Format.KDL;
+        // " = " with `//` or block-opening `{` indicates HOCON assignment syntax, not KDL
+        if (!hasHoconSignal && hasHoconEq && (hasDoubleSlashComment || hasBlockBrace)) {
+            hasHoconSignal = true;
         }
         if (hasHoconSignal) {
             return Format.HOCON;
+        }
+        // Dotenv: export keyword, ${VAR} interpolation, or ALL_CAPS key patterns
+        if (!hasBraceBlock && !hasHoconSignal && xmlSignals < 2) {
+            if (hasDotenvExport || hasDotenvInterp
+                    || hasDotenvCapsQuoted || hasDotenvCapsAssign) {
+                return Format.DOTENV;
+            }
+        }
+        if ((hasKdlSignal || (hasDoubleSlashComment && hasBraceBlock))
+                && !hasHoconSignal) {
+            return Format.KDL;
         }
         return Format.UNKNOWN;
     }

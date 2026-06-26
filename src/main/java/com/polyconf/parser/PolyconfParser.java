@@ -168,7 +168,9 @@ public final class PolyconfParser {
             Format currentFormat = FormatClassifier.classify(currentLines);
             Format nextFormat = FormatClassifier.classify(nextLines);
 
-            if (currentFormat != Format.UNKNOWN && currentFormat.equals(nextFormat)) {
+            if (currentFormat == nextFormat
+                    || currentFormat == Format.UNKNOWN
+                    || nextFormat == Format.UNKNOWN) {
                 current = new Segment(current.startLine(), next.endLine());
             } else {
                 merged.add(current);

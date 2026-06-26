@@ -11,7 +11,7 @@ database {
   port = 5432
   port = ${?DB_PORT}
   name = "myapp"
-  pool_size = 10
+  pool-size = 10
 
   credentials {
     username = "admin"
@@ -21,12 +21,12 @@ database {
 
 features {
   enabled = ["auth", "logging", "metrics"]
-  timeout_ms = 30000
+  timeout-ms = 30000
   pi = 3.14
 
-  rate_limit {
-    max_requests = 1000
-    window = 60s
+  rate-limit {
+    max-requests = 1000
+    window-seconds = 60
   }
 }
 

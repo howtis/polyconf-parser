@@ -27,9 +27,17 @@ public final class ConfigAccessor {
             result.put(key, value.rawValue());
         } else if (node instanceof ConfigSection section) {
             String keyPrefix = prefix.isEmpty() ? section.key() : prefix + "." + section.key();
+            boolean resolvedSelf = false;
             for (ConfigNode child : section.children().values()) {
-                flatten(child, keyPrefix, result);
+                if (child instanceof ConfigValue cv && isSelfMarker(cv.key())) {
+                    result.put(keyPrefix, cv.rawValue());
+                    resolvedSelf = true;
+                } else {
+                    flatten(child, keyPrefix, result);
+                }
             }
+            // sections without self-marker are structural parents; their children
+            // are already flattened with the section's prefix above
         } else if (node instanceof ConfigList list) {
             String key = prefix.isEmpty() ? list.key() : prefix + "." + list.key();
             for (int i = 0; i < list.items().size(); i++) {
@@ -89,6 +97,10 @@ public final class ConfigAccessor {
 
     public Stream<ConfigNode> walk() {
         return walk(root);
+    }
+
+    private static boolean isSelfMarker(String key) {
+        return "#text".equals(key) || "#self".equals(key);
     }
 
     private Stream<ConfigNode> walk(ConfigNode node) {

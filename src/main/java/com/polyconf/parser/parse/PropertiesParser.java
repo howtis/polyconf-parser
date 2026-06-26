@@ -2,6 +2,7 @@ package com.polyconf.parser.parse;
 
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
+import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.Provenance;
 
@@ -89,6 +90,10 @@ public final class PropertiesParser implements LenientParser {
                 current = section.children();
             } else {
                 ConfigSection newSection = new ConfigSection(part, new LinkedHashMap<>(), null, "");
+                if (existing instanceof ConfigValue v) {
+                    newSection.children().put("#self",
+                            new ConfigValue("#self", v.rawValue(), v.type(), v.provenance(), ""));
+                }
                 current.put(part, newSection);
                 current = newSection.children();
             }

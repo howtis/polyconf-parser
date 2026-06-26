@@ -51,6 +51,28 @@ public final class PropertiesDetector extends FormatDetector {
                 score += 3;
             }
         }
+
+        // Negative scoring: patterns that clearly belong to KDL
+        // // comments are KDL, not Properties
+        if (!tokens.isEmpty() && tokens.get(0).text().equals("//")) {
+            score -= 4;
+        }
+        // KDL booleans/null
+        for (Token t : tokens) {
+            String text = t.text();
+            if ("#true".equals(text) || "#false".equals(text) || "#null".equals(text)) {
+                score -= 4;
+                break;
+            }
+        }
+        // KDL-style escaped quotes in values
+        for (Token t : tokens) {
+            if (t.text().contains("\\\"")) {
+                score -= 3;
+                break;
+            }
+        }
+
         return score;
     }
 

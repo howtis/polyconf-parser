@@ -558,8 +558,8 @@ class ResourceTest {
             assertEquals("myapp", f.get("app.name"));
             assertEquals("1.0.0", f.get("app.version"));
             assertEquals("A polyglot configuration parser", f.get("app.description"));
-            assertEquals("0.0.0.0", f.get("server.host"));
-            assertEquals(8080L, f.get("server.port"));
+            assertEquals("0.0.0.0", f.get("app.server.host"));
+            assertEquals(8080L, f.get("app.server.port"));
             assertEquals("localhost", f.get("database.host"));
             assertEquals(5432L, f.get("database.port"));
             assertEquals("myapp", f.get("database.name"));
@@ -596,9 +596,9 @@ class ResourceTest {
             assertEquals("admin", f.get("database.credentials.username"));
             assertEquals("secret", f.get("database.credentials.password"));
             assertEquals(3.14, (Double) f.get("features.pi"), 0.001);
-            assertEquals(30000L, f.get("features.timeout_ms"));
-            assertEquals(1000L, f.get("features.rate_limit.max-requests"));
-            assertEquals(60L, f.get("features.rate_limit.window-seconds"));
+            assertEquals(30000L, f.get("features.timeout-ms"));
+            assertEquals(1000L, f.get("features.rate-limit.max-requests"));
+            assertEquals(60L, f.get("features.rate-limit.window-seconds"));
         }
     }
 

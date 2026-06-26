@@ -30,16 +30,25 @@ public final class HoconParser implements LenientParser {
             return ParserResult.ok(new ConfigSection("", null, ""));
         }
 
+        List<BlockDiagnostic> diags = new ArrayList<>();
         Config config;
         try {
             config = ConfigFactory.parseString(text).resolve();
         } catch (ConfigException e) {
-            return new ParserResult(
-                    new ConfigSection("", null, ""),
-                    List.of(new BlockDiagnostic(0, lines.size() - 1,
-                            "HOCON parse error: " + e.getMessage(),
-                            DiagnosticLevel.ERROR))
-            );
+            // Resolution failed (e.g., include files not found). Try without resolve.
+            diags.add(new BlockDiagnostic(0, lines.size() - 1,
+                    "HOCON resolve error (using unresolved config): " + e.getMessage(),
+                    DiagnosticLevel.WARNING));
+            try {
+                config = ConfigFactory.parseString(text);
+            } catch (ConfigException e2) {
+                return new ParserResult(
+                        new ConfigSection("", null, ""),
+                        List.of(new BlockDiagnostic(0, lines.size() - 1,
+                                "HOCON parse error: " + e2.getMessage(),
+                                DiagnosticLevel.ERROR))
+                );
+            }
         }
 
         Map<String, ConfigNode> children = new LinkedHashMap<>();
@@ -47,7 +56,7 @@ public final class HoconParser implements LenientParser {
             children.put(entry.getKey(), convert(entry.getKey(), entry.getValue()));
         }
 
-        return ParserResult.ok(new ConfigSection("", children, null, ""));
+        return new ParserResult(new ConfigSection("", children, null, ""), diags);
     }
 
     private static ConfigNode convert(String key, com.typesafe.config.ConfigValue value) {

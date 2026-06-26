@@ -134,7 +134,7 @@ public final class YamlParser implements LenientParser {
             return new ConfigValue(key, value, ValueType.BOOLEAN, null, "");
         }
         if (value instanceof Integer || value instanceof Long) {
-            return new ConfigValue(key, value, ValueType.INTEGER, null, "");
+            return new ConfigValue(key, ((Number) value).longValue(), ValueType.INTEGER, null, "");
         }
         if (value instanceof Double || value instanceof Float) {
             return new ConfigValue(key, value, ValueType.FLOAT, null, "");

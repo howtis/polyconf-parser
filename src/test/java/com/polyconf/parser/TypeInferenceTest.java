@@ -24,7 +24,7 @@ class TypeInferenceTest {
         ParseResult result = parser.parse("# @fmt:yaml\nport: 5432\n");
         Map<String, Object> flat = result.flattened();
 
-        assertEquals(5432, flat.get("port"));
+        assertEquals(5432L, flat.get("port"));
     }
 
     @Test
