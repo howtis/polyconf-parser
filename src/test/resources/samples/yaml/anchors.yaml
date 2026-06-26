@@ -1,0 +1,42 @@
+# YAML anchors and aliases
+defaults: &defaults
+  timeout: 30
+  retries: 3
+  ssl: true
+
+services:
+  api:
+    <<: *defaults
+    host: api.example.com
+    port: 8080
+  web:
+    <<: *defaults
+    host: web.example.com
+    port: 80
+  worker:
+    <<: *defaults
+    host: worker.example.com
+    port: 9000
+    retries: 5
+
+# Scalar alias
+database:
+  primary:
+    host: &db-host db-primary.example.com
+    port: 5432
+  replica:
+    host: *db-host
+    port: 5433
+
+# Sequence alias
+regions: &regions
+  - us-east-1
+  - us-west-2
+  - eu-west-1
+
+deployment:
+  production:
+    regions: *regions
+  staging:
+    regions:
+      - us-east-1

@@ -1,0 +1,29 @@
+# YAML multi-document: three documents in one file
+# Doc 1
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  ports:
+    - port: 80
+
+---
+# Doc 2
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+
+---
+# Doc 3
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+data:
+  app.properties: |
+    server.port=8080
+    debug=false

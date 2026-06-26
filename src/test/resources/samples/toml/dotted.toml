@@ -1,0 +1,25 @@
+# TOML with dotted keys
+name = "Orange"
+
+# Dotted keys create implicit tables
+physical.color = "orange"
+physical.shape = "round"
+
+# Quoted dotted key
+site."google.com" = true
+
+# Nested dotted keys
+server.host = "0.0.0.0"
+server.port = 8080
+server.debug = false
+
+database.host = "localhost"
+database.port = 5432
+database.credentials.username = "admin"
+database.credentials.password = "secret"
+
+# Mixed style: dotted key alongside bracketed table
+[features]
+enabled = true
+features.timeout_ms = 30000
+features.rate_limit = 1000

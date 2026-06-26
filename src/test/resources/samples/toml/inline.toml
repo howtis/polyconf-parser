@@ -1,0 +1,29 @@
+# TOML with inline tables
+title = "TOML Inline Table Example"
+
+# Simple inline table
+point = { x = 10, y = 20 }
+
+# Nested inline tables
+server = { host = "0.0.0.0", port = 8080, debug = false }
+
+# Inline table with string values
+database = { host = "localhost", port = 5432, name = "myapp" }
+
+# Array of inline tables
+products = [
+    { name = "Hammer", price = 9.99, sku = 738594937 },
+    { name = "Nail", price = 0.99, sku = 284758393 },
+    { name = "Screwdriver", price = 5.49, sku = 123456789 }
+]
+
+# Deeply nested inline table
+config = { server = { host = "0.0.0.0", port = 8080 }, database = { host = "localhost", port = 5432 } }
+
+# Mixed: bracketed table containing inline tables
+[features]
+auth = { enabled = true, provider = "oauth2" }
+logging = { level = "INFO", format = "json" }
+
+# Inline table with various value types
+metadata = { version = 1, released = true, author = "John Doe", score = 0.95 }

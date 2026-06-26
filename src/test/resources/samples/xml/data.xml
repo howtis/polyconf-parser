@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <description>
+    <![CDATA[
+    This is a multi-line
+    description with <special> characters & entities.
+    It should be preserved as-is.
+    ]]>
+  </description>
+  <script>
+    <![CDATA[
+    function hello() {
+      console.log("Hello, World!");
+      return 1 < 2 && 3 > 1;
+    }
+    ]]>
+  </script>
+  <database>
+    <host>localhost</host>
+    <port>5432</port>
+    <name>myapp</name>
+  </database>
+  <features>
+    <auth>true</auth>
+    <timeout_ms>30000</timeout_ms>
+  </features>
+</configuration>

@@ -1,0 +1,48 @@
+# YAML multi-line strings
+title: Multi-line String Examples
+
+# Literal block scalar (|): preserves newlines
+literal_script: |
+  #!/bin/bash
+  echo "Hello, World!"
+  if [ $? -eq 0 ]; then
+      echo "Success"
+  fi
+
+# Folded block scalar (>): folds newlines to spaces
+folded_description: >
+  This is a long description
+  that will be folded into
+  a single line with spaces
+  between the words.
+
+# Literal with chomp indicator (-): strip trailing newlines
+stripped: |-
+  line 1
+  line 2
+
+# Literal with keep indicator (+): keep trailing newlines
+kept: |+
+  line 1
+  line 2
+
+# Indented block scalar
+indented:
+  literal: |
+    def hello():
+        print("Hello from Python")
+        return True
+  folded: >
+    def add(a, b):
+        return a + b
+
+# Nested with multi-line values
+config:
+  app:
+    name: MyApp
+    description: |
+      A multi-line
+      application description
+    notes: >
+      Single-line summary
+      of the application

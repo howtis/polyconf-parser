@@ -1,0 +1,19 @@
+{
+  "app": {
+    "name": "MyApp",
+    "description": "Multi-language support: \u3053\u3093\u306B\u3061\u306F \u4F60\u597D \uC548\uB155\uD558\uC138\uC694"
+  },
+  "currency": {
+    "euro": "\u20AC",
+    "pound": "\u00A3",
+    "yen": "\u00A5"
+  },
+  "special": {
+    "newline": "Line 1\nLine 2",
+    "tab": "col1\tcol2",
+    "backslash": "C:\\path\\to\\file",
+    "quotes": "She said \"Hello\"",
+    "escaped_quotes": "She said \\\"Hello\\\"",
+    "unicode": "\u0048\u0065\u006C\u006C\u006F"
+  }
+}

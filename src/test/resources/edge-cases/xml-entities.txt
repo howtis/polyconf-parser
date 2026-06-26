@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <app>
+    <name>AT&amp;T Application</name>
+    <description>Checks if a &lt; b and c &gt; d</description>
+    <copyright>&amp;copy; 2024 My Company</copyright>
+    <quote>The book &quot;1984&quot; by Orwell</quote>
+    <apostrophe>It&apos;s a test</apostrophe>
+  </app>
+  <database>
+    <host>localhost</host>
+    <port>5432</port>
+    <name>myapp</name>
+  </database>
+  <special>
+    <value>5 &amp;&amp; 3 &gt; 0 &amp;&amp; 1 &lt; 10</value>
+    <mixed>AT&amp;T &amp; Verizon</mixed>
+  </special>
+</configuration>
