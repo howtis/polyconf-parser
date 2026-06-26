@@ -1,16 +1,17 @@
 package com.polyconf.parser.model;
 
-import com.polyconf.parser.classify.DotenvDetector;
 import com.polyconf.parser.classify.FormatDetector;
-import com.polyconf.parser.classify.HoconDetector;
-import com.polyconf.parser.classify.IniDetector;
-import com.polyconf.parser.classify.Json5Detector;
-import com.polyconf.parser.classify.JsonDetector;
-import com.polyconf.parser.classify.KdlDetector;
-import com.polyconf.parser.classify.PropertiesDetector;
-import com.polyconf.parser.classify.TomlDetector;
-import com.polyconf.parser.classify.XmlDetector;
-import com.polyconf.parser.classify.YamlDetector;
+import com.polyconf.parser.format.DotenvFormat;
+import com.polyconf.parser.format.HoconFormat;
+import com.polyconf.parser.format.IniFormat;
+import com.polyconf.parser.format.Json5Format;
+import com.polyconf.parser.format.JsonFormat;
+import com.polyconf.parser.format.KdlFormat;
+import com.polyconf.parser.format.PropertiesFormat;
+import com.polyconf.parser.format.TomlFormat;
+import com.polyconf.parser.format.XmlFormat;
+import com.polyconf.parser.format.YamlFormat;
+import com.polyconf.parser.parse.LenientParser;
 
 import java.util.List;
 import java.util.Objects;
@@ -22,10 +23,14 @@ public final class Format {
 
     private final String name;
     private final FormatDetector detector;
+    private final LenientParser parser;
+    private final int trialPriority;
 
-    private Format(String name, FormatDetector detector) {
+    private Format(String name, FormatDetector detector, LenientParser parser, int trialPriority) {
         this.name = name;
         this.detector = detector;
+        this.parser = parser;
+        this.trialPriority = trialPriority;
     }
 
     public String name() {
@@ -36,8 +41,20 @@ public final class Format {
         return Optional.ofNullable(detector);
     }
 
-    public static Format register(String name, FormatDetector detector) {
-        Format format = new Format(name, detector);
+    public Optional<LenientParser> parser() {
+        return Optional.ofNullable(parser);
+    }
+
+    /**
+     * Priority for trial-and-error parsing. Higher values are tried first.
+     * Default 0 means this format does not participate in trial-and-error.
+     */
+    public int trialPriority() {
+        return trialPriority;
+    }
+
+    public static Format register(String name, FormatDetector detector, LenientParser parser, int trialPriority) {
+        Format format = new Format(name, detector, parser, trialPriority);
         REGISTRY.put(name, format);
         return format;
     }
@@ -54,18 +71,19 @@ public final class Format {
         return List.copyOf(REGISTRY.values());
     }
 
-    // Constants
-    public static final Format UNKNOWN = new Format("UNKNOWN", null);
-    public static final Format TOML = register("TOML", new TomlDetector());
-    public static final Format YAML = register("YAML", new YamlDetector());
-    public static final Format PROPERTIES = register("PROPERTIES", new PropertiesDetector());
-    public static final Format INI = register("INI", new IniDetector());
-    public static final Format JSON = register("JSON", new JsonDetector());
-    public static final Format DOTENV = register("DOTENV", new DotenvDetector());
-    public static final Format XML = register("XML", new XmlDetector());
-    public static final Format HOCON = register("HOCON", new HoconDetector());
-    public static final Format JSON5 = register("JSON5", new Json5Detector());
-    public static final Format KDL = register("KDL", new KdlDetector());
+    // Constants -- trial-and-error order: specific parsers first, superset parsers later, lenient last.
+    // INI only activates on [section] markers to avoid matching key=value (Properties format).
+    public static final Format UNKNOWN = new Format("UNKNOWN", null, null, 0);
+    public static final Format XML = register("XML", new XmlFormat.Detector(), new XmlFormat.Parser(), 100);
+    public static final Format JSON = register("JSON", new JsonFormat.Detector(), new JsonFormat.Parser(), 90);
+    public static final Format JSON5 = register("JSON5", new Json5Format.Detector(), new Json5Format.Parser(), 80);
+    public static final Format TOML = register("TOML", new TomlFormat.Detector(), new TomlFormat.Parser(), 70);
+    public static final Format KDL = register("KDL", new KdlFormat.Detector(), new KdlFormat.Parser(), 60);
+    public static final Format YAML = register("YAML", new YamlFormat.Detector(), new YamlFormat.Parser(), 50);
+    public static final Format INI = register("INI", new IniFormat.Detector(), new IniFormat.Parser(), 40);
+    public static final Format PROPERTIES = register("PROPERTIES", new PropertiesFormat.Detector(), new PropertiesFormat.Parser(), 30);
+    public static final Format HOCON = register("HOCON", new HoconFormat.Detector(), new HoconFormat.Parser(), 20);
+    public static final Format DOTENV = register("DOTENV", new DotenvFormat.Detector(), new DotenvFormat.Parser(), 10);
 
     @Override
     public boolean equals(Object o) {

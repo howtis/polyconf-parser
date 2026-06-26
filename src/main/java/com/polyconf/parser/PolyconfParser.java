@@ -12,54 +12,25 @@ import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.Format;
 import com.polyconf.parser.model.ParseResult;
 import com.polyconf.parser.model.ParserResult;
-import com.polyconf.parser.parse.DotenvParser;
-import com.polyconf.parser.parse.HoconParser;
-import com.polyconf.parser.parse.IniParser;
-import com.polyconf.parser.parse.Json5Parser;
-import com.polyconf.parser.parse.JsonParser;
-import com.polyconf.parser.parse.KdlParser;
+import com.polyconf.parser.format.PropertiesFormat;
 import com.polyconf.parser.parse.LenientParser;
-import com.polyconf.parser.parse.PropertiesParser;
-import com.polyconf.parser.parse.TomlParser;
-import com.polyconf.parser.parse.XmlParser;
-import com.polyconf.parser.parse.YamlParser;
 import com.polyconf.parser.segment.Segment;
 import com.polyconf.parser.segment.Segmenter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class PolyconfParser {
 
-    // trial-and-error order -- specific parsers first, superset parsers later, lenient last.
-    // INI only activates on [section] markers to avoid matching key=value (Properties format).
-    // Use List to guarantee iteration order for trial-and-error.
-    private static final List<Map.Entry<Format, LenientParser>> PARSERS = List.of(
-            Map.entry(Format.XML, new XmlParser()),
-            Map.entry(Format.JSON, new JsonParser()),
-            Map.entry(Format.JSON5, new Json5Parser()),
-            Map.entry(Format.TOML, new TomlParser()),
-            Map.entry(Format.KDL, new KdlParser()),
-            Map.entry(Format.YAML, new YamlParser()),
-            Map.entry(Format.INI, new IniParser()),
-            Map.entry(Format.PROPERTIES, new PropertiesParser()),
-            Map.entry(Format.HOCON, new HoconParser()),
-            Map.entry(Format.DOTENV, new DotenvParser())
-    );
-
-    private static final Map<Format, LenientParser> PARSER_MAP = PARSERS.stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-    private static boolean isPlausible(List<String> lines, Format format) {
-        LenientParser parser = PARSER_MAP.get(format);
-        if (parser != null) {
-            return parser.isPlausible(lines);
-        }
-        return true;
-    }
+    // Trial-and-error order derived from Format.trialPriority().
+    // Formats with trialPriority > 0 participate, sorted descending.
+    private static final List<Format> TRIAL_FORMATS = Format.registeredFormats().stream()
+            .filter(f -> f.trialPriority() > 0)
+            .sorted(Comparator.comparingInt(Format::trialPriority).reversed())
+            .toList();
 
     /**
      * Fallback parser used when no format is detected or the detected format's
@@ -67,7 +38,7 @@ public final class PolyconfParser {
      * key=value extractor - it finds any '=' or ':' separator regardless of
      * surrounding whitespace.
      */
-    private static final LenientParser FALLBACK_PARSER = new PropertiesParser();
+    private static final LenientParser FALLBACK_PARSER = new PropertiesFormat.Parser();
 
     private final ConfigMerger merger;
 
@@ -198,7 +169,7 @@ public final class PolyconfParser {
         // Fall back to trial-and-error only when the classifier cannot decide.
         Format detectedFormat = FormatClassifier.classify(blockLines);
         if (detectedFormat != Format.UNKNOWN) {
-            LenientParser parser = PARSER_MAP.get(detectedFormat);
+            LenientParser parser = detectedFormat.parser().orElse(null);
             if (parser != null) {
                 ParserResult pr = parser.parse(blockLines);
                 if (!pr.section().children().isEmpty()) {
@@ -210,14 +181,15 @@ public final class PolyconfParser {
         }
 
         // Classifier couldn't decide -- trial-and-error fallback.
-        for (Map.Entry<Format, LenientParser> entry : PARSERS) {
-            if (!isPlausible(blockLines, entry.getKey())) {
+        for (Format format : TRIAL_FORMATS) {
+            LenientParser parser = format.parser().orElseThrow();
+            if (!parser.isPlausible(blockLines)) {
                 continue;
             }
-            ParserResult pr = entry.getValue().parse(blockLines);
+            ParserResult pr = parser.parse(blockLines);
             if (!pr.section().children().isEmpty()) {
                 diagnostics.addAll(pr.diagnostics());
-                return new BlockResult(startLine, endLine, entry.getKey(), 0.5, false, pr.section());
+                return new BlockResult(startLine, endLine, format, 0.5, false, pr.section());
             }
         }
 
@@ -237,10 +209,7 @@ public final class PolyconfParser {
     }
 
     private static LenientParser parserFor(Format format) {
-        LenientParser parser = PARSER_MAP.get(format);
-        if (parser == null) {
-            throw new IllegalArgumentException("No parser registered for format: " + format.name());
-        }
-        return parser;
+        return format.parser().orElseThrow(() ->
+                new IllegalArgumentException("No parser registered for format: " + format.name()));
     }
 }

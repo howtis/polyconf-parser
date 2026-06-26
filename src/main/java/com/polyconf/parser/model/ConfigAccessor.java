@@ -27,11 +27,9 @@ public final class ConfigAccessor {
             result.put(key, value.rawValue());
         } else if (node instanceof ConfigSection section) {
             String keyPrefix = prefix.isEmpty() ? section.key() : prefix + "." + section.key();
-            boolean resolvedSelf = false;
             for (ConfigNode child : section.children().values()) {
                 if (child instanceof ConfigValue cv && isSelfMarker(cv.key())) {
                     result.put(keyPrefix, cv.rawValue());
-                    resolvedSelf = true;
                 } else {
                     flatten(child, keyPrefix, result);
                 }
@@ -46,7 +44,7 @@ public final class ConfigAccessor {
                 if (item instanceof ConfigValue v) {
                     result.put(idxPrefix, v.rawValue());
                 } else if (item instanceof ConfigSection section) {
-                    // Check for self-marker (#text or #self) — treat section as a leaf value
+                    // Check for self-marker (#text or #self) -- treat section as a leaf value
                     var selfChild = section.children().values().stream()
                             .filter(c -> c instanceof ConfigValue cv && isSelfMarker(cv.key()))
                             .findFirst();
@@ -66,36 +64,36 @@ public final class ConfigAccessor {
 
     public Optional<String> getString(String dottedPath) {
         return root.resolve(dottedPath)
-                .filter(n -> n instanceof ConfigValue)
+                .filter(ConfigValue.class::isInstance)
                 .map(n -> ((ConfigValue) n).asString())
                 .flatMap(o -> o);
     }
 
     public Optional<Integer> getInt(String dottedPath) {
         return root.resolve(dottedPath)
-                .filter(n -> n instanceof ConfigValue)
+                .filter(ConfigValue.class::isInstance)
                 .map(n -> ((ConfigValue) n).asInt())
                 .flatMap(o -> o);
     }
 
     public Optional<Boolean> getBool(String dottedPath) {
         return root.resolve(dottedPath)
-                .filter(n -> n instanceof ConfigValue)
+                .filter(ConfigValue.class::isInstance)
                 .map(n -> ((ConfigValue) n).asBool())
                 .flatMap(o -> o);
     }
 
     public Optional<Double> getFloat(String dottedPath) {
         return root.resolve(dottedPath)
-                .filter(n -> n instanceof ConfigValue)
+                .filter(ConfigValue.class::isInstance)
                 .map(n -> ((ConfigValue) n).asFloat())
                 .flatMap(o -> o);
     }
 
     public Optional<ConfigSection> getSection(String dottedPath) {
         return root.resolve(dottedPath)
-                .filter(n -> n instanceof ConfigSection)
-                .map(n -> (ConfigSection) n);
+                .filter(ConfigSection.class::isInstance)
+                .map(ConfigSection.class::cast);
     }
 
     public Optional<ConfigNode> get(String dottedPath) {

@@ -1,9 +1,11 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.format.XmlFormat;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -12,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class XmlParserTest {
 
-    private final XmlParser parser = new XmlParser();
+    private final LenientParser parser = new XmlFormat.Parser();
 
     @Test
     void simpleElement() {

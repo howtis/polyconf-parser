@@ -1,10 +1,12 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.format.JsonFormat;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.ParserResult;
+import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JsonParserTest {
 
-    private final JsonParser parser = new JsonParser();
+    private final LenientParser parser = new JsonFormat.Parser();
 
     @Test
     void basicObject() {

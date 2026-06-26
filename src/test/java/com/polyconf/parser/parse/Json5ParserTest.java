@@ -1,11 +1,13 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.format.Json5Format;
 import com.polyconf.parser.model.ConfigAccessor;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.ParserResult;
+import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -14,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class Json5ParserTest {
 
-    private final Json5Parser parser = new Json5Parser();
+    private final LenientParser parser = new Json5Format.Parser();
 
     // --- Core JSON5 features ---
 

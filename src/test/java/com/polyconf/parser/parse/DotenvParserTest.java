@@ -1,10 +1,12 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.format.DotenvFormat;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
+import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DotenvParserTest {
 
-    private final DotenvParser parser = new DotenvParser();
+    private final LenientParser parser = new DotenvFormat.Parser();
 
     @Test
     void basicKeyValue() {

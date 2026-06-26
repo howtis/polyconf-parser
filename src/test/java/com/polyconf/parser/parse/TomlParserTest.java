@@ -1,11 +1,13 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.format.TomlFormat;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.ValueType;
+import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -14,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TomlParserTest {
 
-    private final TomlParser parser = new TomlParser();
+    private final LenientParser parser = new TomlFormat.Parser();
 
     @Test
     void basicKeyValue() {

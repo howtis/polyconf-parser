@@ -1,8 +1,10 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.format.PropertiesFormat;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.parse.LenientParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -11,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PropertiesParserTest {
 
-    private final PropertiesParser parser = new PropertiesParser();
+    private final LenientParser parser = new PropertiesFormat.Parser();
 
     @Test
     void basicKeyValue() {
