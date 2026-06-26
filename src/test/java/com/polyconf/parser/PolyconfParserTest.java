@@ -285,6 +285,23 @@ class PolyconfParserTest {
     }
 
     @Test
+    void parseNullContentWithPolicyThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                parser.parse((String) null, MergePolicy.DEFAULT));
+    }
+
+    @Test
+    void unknownHintFormatThrows() {
+        List<String> lines = List.of(
+                "# @fmt:unknownfmt",
+                "key=value"
+        );
+        // Unknown format → Format.UNKNOWN which has no parser →
+        // processHintedBlock calls parserFor(UNKNOWN) → orElseThrow → IllegalArgumentException
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(lines));
+    }
+
+    @Test
     void singleKdlBlock() {
         List<String> lines = List.of(
                 "server {",

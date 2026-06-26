@@ -1,6 +1,5 @@
-package com.polyconf.parser.parse;
+package com.polyconf.parser.format;
 
-import com.polyconf.parser.format.Json5Format;
 import com.polyconf.parser.model.ConfigAccessor;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;

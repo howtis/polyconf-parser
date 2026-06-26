@@ -1,6 +1,7 @@
 package com.polyconf.parser.model;
 
 import org.junit.jupiter.api.Test;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -188,5 +189,278 @@ class ConfigNodeTest {
                 new Provenance(0, Format.UNKNOWN, "", 1.5));
         assertThrows(IllegalArgumentException.class, () ->
                 new Provenance(0, Format.UNKNOWN, "", -0.1));
+    }
+
+    // --- ConfigValue coercion edge cases ---
+
+    @Test
+    void asIntFromFloatTruncates() {
+        Provenance p = new Provenance(1, Format.JSON, "pi", 1.0);
+        ConfigValue val = new ConfigValue("pi", 3.14, ValueType.FLOAT, p, "pi");
+        assertEquals(3, val.asInt().orElseThrow());
+    }
+
+    @Test
+    void asIntFromStringNumeric() {
+        Provenance p = new Provenance(1, Format.JSON, "port", 1.0);
+        ConfigValue val = new ConfigValue("port", "5432", ValueType.STRING, p, "port");
+        assertEquals(5432, val.asInt().orElseThrow());
+    }
+
+    @Test
+    void asIntFromStringNonNumeric() {
+        Provenance p = new Provenance(1, Format.JSON, "name", 1.0);
+        ConfigValue val = new ConfigValue("name", "hello", ValueType.STRING, p, "name");
+        assertFalse(val.asInt().isPresent());
+    }
+
+    @Test
+    void asBoolFromStringTrue() {
+        Provenance p = new Provenance(1, Format.JSON, "active", 1.0);
+        ConfigValue val = new ConfigValue("active", "true", ValueType.STRING, p, "active");
+        assertTrue(val.asBool().orElseThrow());
+    }
+
+    @Test
+    void asBoolFromStringFalse() {
+        Provenance p = new Provenance(1, Format.JSON, "debug", 1.0);
+        ConfigValue val = new ConfigValue("debug", "false", ValueType.STRING, p, "debug");
+        assertFalse(val.asBool().orElseThrow());
+    }
+
+    @Test
+    void asBoolFromStringNonBoolean() {
+        Provenance p = new Provenance(1, Format.JSON, "mode", 1.0);
+        ConfigValue val = new ConfigValue("mode", "maybe", ValueType.STRING, p, "mode");
+        assertFalse(val.asBool().isPresent());
+    }
+
+    @Test
+    void asFloatFromInteger() {
+        Provenance p = new Provenance(1, Format.JSON, "count", 1.0);
+        ConfigValue val = new ConfigValue("count", 42, ValueType.INTEGER, p, "count");
+        assertEquals(42.0, val.asFloat().orElseThrow(), 0.001);
+    }
+
+    @Test
+    void asFloatFromStringNumeric() {
+        Provenance p = new Provenance(1, Format.JSON, "pi", 1.0);
+        ConfigValue val = new ConfigValue("pi", "3.14", ValueType.STRING, p, "pi");
+        assertEquals(3.14, val.asFloat().orElseThrow(), 0.001);
+    }
+
+    @Test
+    void asFloatFromStringNonNumeric() {
+        Provenance p = new Provenance(1, Format.JSON, "label", 1.0);
+        ConfigValue val = new ConfigValue("label", "hello", ValueType.STRING, p, "label");
+        assertFalse(val.asFloat().isPresent());
+    }
+
+    // --- ConfigAccessor additional methods ---
+
+    @Test
+    void configAccessorGetFloat() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        root.children().put("pi", new ConfigValue("pi", 3.14, ValueType.FLOAT, p, "pi"));
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+        assertEquals(3.14, accessor.getFloat("pi").orElseThrow(), 0.001);
+        assertFalse(accessor.getFloat("missing").isPresent());
+    }
+
+    @Test
+    void configAccessorGetSection() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        ConfigSection server = new ConfigSection("server", p, "server");
+        ConfigSection db = new ConfigSection("db", p, "server.db");
+        server.children().put("db", db);
+        root.children().put("server", server);
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+        assertTrue(accessor.getSection("server").isPresent());
+        assertTrue(accessor.getSection("server.db").isPresent());
+        assertFalse(accessor.getSection("missing").isPresent());
+    }
+
+    @Test
+    void configAccessorGet() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        root.children().put("key", new ConfigValue("key", 42, ValueType.INTEGER, p, "key"));
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+        assertTrue(accessor.get("key").isPresent());
+        assertEquals(42, ((ConfigValue) accessor.get("key").get()).rawValue());
+        assertFalse(accessor.get("missing").isPresent());
+    }
+
+    @Test
+    void configAccessorWalk() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        root.children().put("a", new ConfigValue("a", 1, ValueType.INTEGER, p, "a"));
+        root.children().put("b", new ConfigValue("b", 2, ValueType.INTEGER, p, "b"));
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+        List<ConfigNode> nodes = accessor.walk().toList();
+        // root + 2 children = 3 nodes
+        assertEquals(3, nodes.size());
+    }
+
+    @Test
+    void configAccessorNullRootThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ConfigAccessor(null));
+    }
+
+    // --- BlockResult validation ---
+
+    @Test
+    void blockResultNegativeStartLineThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockResult(-1, 0, Format.TOML, 1.0, false, section));
+    }
+
+    @Test
+    void blockResultEndLineBeforeStartLineThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockResult(5, 3, Format.TOML, 1.0, false, section));
+    }
+
+    @Test
+    void blockResultConfidenceBelowRangeThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockResult(0, 1, Format.TOML, -0.1, false, section));
+    }
+
+    @Test
+    void blockResultConfidenceAboveRangeThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockResult(0, 1, Format.TOML, 1.01, false, section));
+    }
+
+    @Test
+    void blockResultNullFormatThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockResult(0, 1, null, 1.0, false, section));
+    }
+
+    @Test
+    void blockResultNullSectionThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockResult(0, 1, Format.TOML, 1.0, false, null));
+    }
+
+    // --- BlockDiagnostic validation ---
+
+    @Test
+    void blockDiagnosticNegativeStartLineThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockDiagnostic(-1, 0, "msg", DiagnosticLevel.ERROR));
+    }
+
+    @Test
+    void blockDiagnosticEndLineBeforeStartLineThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockDiagnostic(3, 1, "msg", DiagnosticLevel.WARNING));
+    }
+
+    @Test
+    void blockDiagnosticNullMessageThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockDiagnostic(0, 1, null, DiagnosticLevel.ERROR));
+    }
+
+    @Test
+    void blockDiagnosticBlankMessageThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new BlockDiagnostic(0, 1, "   ", DiagnosticLevel.ERROR));
+    }
+
+    // --- ParserResult validation ---
+
+    @Test
+    void parserResultNullSectionThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ParserResult(null, List.of()));
+    }
+
+    @Test
+    void parserResultNullDiagnosticsThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new ParserResult(section, null));
+    }
+
+    @Test
+    void parserResultOkFactory() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("", p, "");
+        ParserResult result = ParserResult.ok(section);
+        assertSame(section, result.section());
+        assertTrue(result.diagnostics().isEmpty());
+    }
+
+    // --- ConfigNode.resolve for ConfigValue/ConfigList ---
+
+    @Test
+    void configValueResolveEmptyPath() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigValue val = new ConfigValue("key", 42, ValueType.INTEGER, p, "key");
+        assertTrue(val.resolve(null).isPresent());
+        assertTrue(val.resolve("").isPresent());
+        assertSame(val, val.resolve(null).get());
+    }
+
+    @Test
+    void configValueResolveNonEmptyPath() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigValue val = new ConfigValue("key", 42, ValueType.INTEGER, p, "key");
+        assertFalse(val.resolve("any.path").isPresent());
+    }
+
+    @Test
+    void configListResolve() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigList list = new ConfigList("items", List.of(), p, "items");
+        assertTrue(list.resolve(null).isPresent());
+        assertFalse(list.resolve("any.path").isPresent());
+    }
+
+    // --- ParseResult validation ---
+
+    @Test
+    void parseResultNullRootThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new ParseResult(null, List.of(), List.of()));
+    }
+
+    @Test
+    void parseResultNullBlocksThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new ParseResult(root, null, List.of()));
+    }
+
+    @Test
+    void parseResultNullDiagnosticsThrows() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        assertThrows(IllegalArgumentException.class, () ->
+                new ParseResult(root, List.of(), null));
     }
 }

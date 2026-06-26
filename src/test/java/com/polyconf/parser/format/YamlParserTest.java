@@ -1,6 +1,5 @@
-package com.polyconf.parser.parse;
+package com.polyconf.parser.format;
 
-import com.polyconf.parser.format.YamlFormat;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigSection;
 import com.polyconf.parser.model.ConfigValue;

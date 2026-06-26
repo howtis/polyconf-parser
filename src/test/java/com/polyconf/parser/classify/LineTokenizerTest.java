@@ -49,4 +49,54 @@ class LineTokenizerTest {
         assertEquals(1, tokens.size());
         assertTrue(tokens.get(0).isNumberLiteral());
     }
+
+    // --- Token isNumberLiteral edge cases ---
+
+    @Test
+    void isNumberLiteralNegative() {
+        Token t = new Token("-5", TokenKind.WORD, false, false);
+        assertTrue(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralFloat() {
+        Token t = new Token("3.14", TokenKind.WORD, false, false);
+        assertTrue(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralScientific() {
+        Token t = new Token("1e5", TokenKind.WORD, false, false);
+        assertTrue(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralScientificNegativeExponent() {
+        Token t = new Token("1.5e-3", TokenKind.WORD, false, false);
+        assertTrue(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralEmpty() {
+        Token t = new Token("", TokenKind.WORD, false, false);
+        assertFalse(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralWordFalse() {
+        Token t = new Token("hello", TokenKind.WORD, false, false);
+        assertFalse(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralQuotedNumber() {
+        Token t = new Token("42", TokenKind.QUOTED, false, false);
+        assertTrue(t.isNumberLiteral());
+    }
+
+    @Test
+    void isNumberLiteralOnlySign() {
+        Token t = new Token("-", TokenKind.WORD, false, false);
+        assertFalse(t.isNumberLiteral());
+    }
 }

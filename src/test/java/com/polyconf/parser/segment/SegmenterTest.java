@@ -52,4 +52,16 @@ class SegmenterTest {
         List<Segment> result = Segmenter.segment(List.of(), List.of());
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void nullLinesThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                Segmenter.segment(null, List.of()));
+    }
+
+    @Test
+    void nullHintsThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                Segmenter.segment(List.of(), null));
+    }
 }

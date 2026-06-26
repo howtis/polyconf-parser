@@ -44,4 +44,19 @@ class HintParserTest {
 
         assertTrue(hints.isEmpty());
     }
+
+    @Test
+    void nullLinesThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+                HintParser.parse(null));
+    }
+
+    @Test
+    void unknownFormatReturnsUnknown() {
+        List<String> lines = List.of("# @fmt:unknownfmt");
+        List<Hint> hints = HintParser.parse(lines);
+
+        assertEquals(1, hints.size());
+        assertEquals(Format.UNKNOWN, hints.get(0).format());
+    }
 }
