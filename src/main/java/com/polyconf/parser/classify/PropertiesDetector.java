@@ -42,6 +42,7 @@ public final class PropertiesDetector extends FormatDetector {
 
         if (hasColon && !hasEquals && !firstIsDelim) {
             score += hasDottedKeyBeforeColon(tokens) ? 3 : 1;
+            score -= 3;
         }
 
         if (!tokens.isEmpty()) {

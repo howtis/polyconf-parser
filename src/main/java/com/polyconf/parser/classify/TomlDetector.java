@@ -30,6 +30,10 @@ public final class TomlDetector extends FormatDetector {
                     && t.spaceBefore() && t.spaceAfter()) {
                 score += 3;
             }
+            if (t.kind() == TokenKind.DELIMITER
+                    && (t.text().equals("{") || t.text().equals("}"))) {
+                score -= 5;
+            }
         }
         return score;
     }

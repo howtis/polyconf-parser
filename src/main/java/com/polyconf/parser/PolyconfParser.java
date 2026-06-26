@@ -205,8 +205,11 @@ public final class PolyconfParser {
             LenientParser parser = PARSER_MAP.get(detectedFormat);
             if (parser != null) {
                 ParserResult pr = parser.parse(blockLines);
+                if (!pr.section().children().isEmpty()) {
+                    diagnostics.addAll(pr.diagnostics());
+                    return new BlockResult(startLine, endLine, detectedFormat, 1.0, false, pr.section());
+                }
                 diagnostics.addAll(pr.diagnostics());
-                return new BlockResult(startLine, endLine, detectedFormat, 1.0, false, pr.section());
             }
         }
 

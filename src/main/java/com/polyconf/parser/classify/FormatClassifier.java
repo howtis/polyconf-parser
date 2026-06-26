@@ -5,6 +5,7 @@ import com.polyconf.parser.model.Format;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class FormatClassifier {
@@ -16,6 +17,79 @@ public final class FormatClassifier {
     }
 
     public static Format classify(List<String> lines) {
+        Format signatureHit = detectBySignature(lines);
+        if (signatureHit != Format.UNKNOWN) {
+            return signatureHit;
+        }
+        return classifyByScore(lines);
+    }
+
+    private static Format detectBySignature(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return Format.UNKNOWN;
+        }
+
+        int xmlSignals = 0;
+        boolean hasKdlSignal = false;
+        boolean hasHoconSignal = false;
+        boolean hasDoubleSlashComment = false;
+        boolean hasBraceBlock = false;
+
+        Pattern xmlClosingTag = Pattern.compile("</[a-zA-Z]");
+        Pattern xmlDeclaration = Pattern.compile("<\\?xml");
+
+        for (String line : lines) {
+            String stripped = line.strip();
+            if (stripped.isEmpty()) {
+                continue;
+            }
+
+            if (xmlDeclaration.matcher(stripped).find()) {
+                xmlSignals++;
+            }
+            if (xmlClosingTag.matcher(stripped).find()) {
+                xmlSignals++;
+            }
+
+            if (!hasKdlSignal) {
+                if (stripped.contains("/-")
+                        || stripped.contains("#true")
+                        || stripped.contains("#false")
+                        || stripped.contains("#null")) {
+                    hasKdlSignal = true;
+                }
+            }
+            if (stripped.startsWith("//")) {
+                hasDoubleSlashComment = true;
+            }
+            if (stripped.contains("{")) {
+                hasBraceBlock = true;
+            }
+
+            if (!hasHoconSignal) {
+                if (stripped.contains("${")
+                        || stripped.contains("+=")
+                        || (stripped.startsWith("include")
+                            && (stripped.contains("\"") || stripped.contains("'")))) {
+                    hasHoconSignal = true;
+                }
+            }
+        }
+
+        if (xmlSignals >= 2) {
+            return Format.XML;
+        }
+        if ((hasKdlSignal || (hasDoubleSlashComment && hasBraceBlock))
+                && !hasHoconSignal) {
+            return Format.KDL;
+        }
+        if (hasHoconSignal) {
+            return Format.HOCON;
+        }
+        return Format.UNKNOWN;
+    }
+
+    private static Format classifyByScore(List<String> lines) {
         Map<Format, Integer> scores = scoreMap(lines);
 
         Format bestFormat = null;

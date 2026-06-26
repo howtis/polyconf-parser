@@ -26,6 +26,9 @@ public final class IniDetector extends FormatDetector {
             if (t.text().equals(";")) {
                 score += 1;
             }
+            if (t.text().equals("[[")) {
+                score -= 3;
+            }
         }
         if (hasIniEquals) {
             score += 2;

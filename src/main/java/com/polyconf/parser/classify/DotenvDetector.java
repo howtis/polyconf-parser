@@ -25,6 +25,10 @@ public final class DotenvDetector extends FormatDetector {
             if (first.kind() == TokenKind.WORD && first.text().equalsIgnoreCase("export")) {
                 score += 4;
             }
+            Token last = tokens.get(tokens.size() - 1);
+            if (first.text().equals("[") && last.text().equals("]")) {
+                score -= 3;
+            }
         }
         return score;
     }

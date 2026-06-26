@@ -31,9 +31,16 @@ public final class YamlDetector extends FormatDetector {
                     || "<".equals(tokens.get(0).text())
                     || "{".equals(tokens.get(0).text()));
 
+        boolean isListItem = !tokens.isEmpty() && tokens.get(0).text().equals("-");
+
         for (Token t : tokens) {
             if (t.text().equals(":")) hasColon = true;
-            if (t.text().equals("=")) hasEquals = true;
+            if (t.text().equals("=")) {
+                hasEquals = true;
+                if (!isListItem) {
+                    score -= 5;
+                }
+            }
         }
 
         if (hasColon && !hasEquals && !firstIsBracket) {
