@@ -1,5 +1,6 @@
 package com.polyconf.parser.parse;
 
+import com.polyconf.parser.model.ConfigAccessor;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
@@ -193,7 +194,7 @@ class Json5ParserTest {
     void flattenedArrayOfObjectsShouldSkipInternalKeys() {
         String json5 = "{ records: [ { id: 1, name: 'Alice' }, { id: 2, name: 'Bob' } ] }";
         ParserResult pr = parser.parse(List.of(json5));
-        var f = pr.flattened();
+        var f = new ConfigAccessor(pr.section()).asFlattenedMap();
         assertEquals(1L, f.get("records[0].id"));
         assertEquals("Alice", f.get("records[0].name"));
         assertEquals(2L, f.get("records[1].id"));

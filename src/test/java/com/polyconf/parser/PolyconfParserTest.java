@@ -315,4 +315,66 @@ class PolyconfParserTest {
         assertEquals(Format.KDL, result.blocks().get(0).detectedFormat());
         assertTrue(result.blocks().get(0).hinted());
     }
+
+    @Test
+    void sameFormatBlankLinesMerged() {
+        List<String> lines = List.of(
+                "app.name=polyconf",
+                "app.version=1.0.0",
+                "",
+                "server.host=0.0.0.0",
+                "server.port=8080",
+                "",
+                "database.host=localhost",
+                "database.port=5432"
+        );
+
+        ParseResult result = parser.parse(lines);
+
+        assertEquals(1, result.blocks().size(),
+                "adjacent same-format segments should be merged");
+        assertEquals(Format.PROPERTIES, result.blocks().get(0).detectedFormat());
+        assertEquals("polyconf", result.flattened().get("app.name"));
+        assertEquals("0.0.0.0", result.flattened().get("server.host"));
+        assertEquals("localhost", result.flattened().get("database.host"));
+    }
+
+    @Test
+    void differentFormatBlankLinesKeptSeparate() {
+        List<String> lines = List.of(
+                "{",
+                "  \"name\": \"app\"",
+                "}",
+                "",
+                "server.host=localhost",
+                "server.port=8080"
+        );
+
+        ParseResult result = parser.parse(lines);
+
+        assertEquals(2, result.blocks().size(),
+                "different-format segments should remain separate");
+        assertEquals(Format.JSON, result.blocks().get(0).detectedFormat());
+        assertEquals(Format.PROPERTIES, result.blocks().get(1).detectedFormat());
+    }
+
+    @Test
+    void hintedBlocksRespectBoundaries() {
+        List<String> lines = List.of(
+                "app.name=polyconf",
+                "app.version=1.0.0",
+                "",
+                "# @fmt:toml",
+                "[server]",
+                "port = 8080",
+                "",
+                "# @fmt:json",
+                "{ \"debug\": true }"
+        );
+
+        ParseResult result = parser.parse(lines);
+
+        assertEquals(3, result.blocks().size(),
+                "hints should act as explicit boundaries");
+    }
 }

@@ -109,6 +109,7 @@ public final class PolyconfParser {
 
         List<Hint> hints = HintParser.parse(lines);
         List<Segment> segments = Segmenter.segment(lines, hints);
+        segments = mergeAdjacentSegments(segments, lines, hints);
 
         List<BlockResult> blockResults = new ArrayList<>();
         List<ConfigSection> sections = new ArrayList<>();
@@ -135,6 +136,47 @@ public final class PolyconfParser {
         diagnostics.addAll(allDiagnostics);
 
         return new ParseResult(mergeResult.merged(), blockResults, diagnostics);
+    }
+
+    private List<Segment> mergeAdjacentSegments(
+            List<Segment> segments, List<String> lines, List<Hint> hints) {
+        if (segments.size() <= 1) {
+            return segments;
+        }
+
+        java.util.Set<Integer> hintLines = hints.stream()
+                .map(Hint::line)
+                .collect(Collectors.toSet());
+
+        List<Segment> merged = new ArrayList<>();
+        Segment current = segments.get(0);
+
+        for (int i = 1; i < segments.size(); i++) {
+            Segment next = segments.get(i);
+
+            boolean currentIsHinted = hintLines.contains(current.startLine());
+            boolean nextIsHinted = hintLines.contains(next.startLine());
+
+            if (currentIsHinted || nextIsHinted) {
+                merged.add(current);
+                current = next;
+                continue;
+            }
+
+            List<String> currentLines = lines.subList(current.startLine(), current.endLine() + 1);
+            List<String> nextLines = lines.subList(next.startLine(), next.endLine() + 1);
+            Format currentFormat = FormatClassifier.classify(currentLines);
+            Format nextFormat = FormatClassifier.classify(nextLines);
+
+            if (currentFormat != Format.UNKNOWN && currentFormat.equals(nextFormat)) {
+                current = new Segment(current.startLine(), next.endLine());
+            } else {
+                merged.add(current);
+                current = next;
+            }
+        }
+        merged.add(current);
+        return List.copyOf(merged);
     }
 
     private BlockResult processHintedBlock(

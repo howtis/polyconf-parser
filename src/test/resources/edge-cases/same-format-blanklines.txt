@@ -1,0 +1,10 @@
+# Same format (Properties) with blank lines between sections
+# These should NOT be treated as separate format blocks
+app.name=polyconf
+app.version=1.0.0
+
+server.host=0.0.0.0
+server.port=8080
+
+database.host=localhost
+database.port=5432
