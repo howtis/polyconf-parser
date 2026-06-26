@@ -153,8 +153,20 @@ public final class KdlFormat {
 
         @Override
         public boolean isPlausible(List<String> lines) {
+            if (lines == null || lines.isEmpty()) {
+                return false;
+            }
             String text = String.join(" ", lines);
-            return text.contains("{") || text.contains(";");
+            // KDL-unique tokens must be present — {} and ; alone appear in
+            // many formats (JSON, TOML inline tables, C-family source).
+            boolean hasKdlSignal = text.contains("/-")
+                    || text.contains("#true")
+                    || text.contains("#false")
+                    || text.contains("#null");
+            boolean hasKdlComment = text.contains("//");
+            boolean hasBraceBlock = text.contains("{");
+            // Also accept explicit KDL statement terminator as a strong signal
+            return hasKdlSignal || (hasKdlComment && hasBraceBlock) || text.contains(";");
         }
 
         @Override

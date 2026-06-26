@@ -152,6 +152,8 @@ public final class PropertiesFormat {
                 if (key.isEmpty()) {
                     continue;
                 }
+                value = unquote(value);
+
                 putNested(children, key, value, i, raw);
             }
 
@@ -176,6 +178,17 @@ public final class PropertiesFormat {
                 result.add(current.toString());
             }
             return result;
+        }
+
+        private static String unquote(String value) {
+            if (value.length() >= 2) {
+                char first = value.charAt(0);
+                char last = value.charAt(value.length() - 1);
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                    return value.substring(1, value.length() - 1);
+                }
+            }
+            return value;
         }
 
         static void putNested(Map<String, ConfigNode> root, String key, String value, int line, String raw) {
