@@ -151,4 +151,15 @@ class IniParserTest {
         assertTrue(val.startsWith("value"));
     }
 
+    @Test
+    void emptyInput() {
+        ConfigSection result = parser.parse(List.of("   ")).section();
+        assertTrue(result.children().isEmpty());
+    }
+
+    @Test
+    void nullInput() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
+    }
+
 }

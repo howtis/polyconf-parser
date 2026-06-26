@@ -130,4 +130,15 @@ class YamlParserTest {
         assertEquals(DiagnosticLevel.ERROR, pr.diagnostics().get(0).level());
         assertTrue(pr.diagnostics().get(0).message().contains("circular anchor"));
     }
+
+    @Test
+    void emptyInput() {
+        ConfigSection result = parser.parse(List.of("   ")).section();
+        assertTrue(result.children().isEmpty());
+    }
+
+    @Test
+    void nullInput() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
+    }
 }

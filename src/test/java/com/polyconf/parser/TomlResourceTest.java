@@ -27,7 +27,6 @@ class TomlResourceTest extends ResourceTestBase {
     @Test
     void server() {
         ParseResult r = parseResource("samples/toml/server.toml");
-        System.out.println("=== TOML flat keys: " + r.flattened().keySet());
         assertNoErrors(r, "server.toml");
         assertFormat(r, Format.TOML, "server.toml");
         Map<String, Object> f = r.flattened();

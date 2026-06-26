@@ -202,7 +202,7 @@ class PolyconfParserTest {
                 "port=9090"
         );
 
-        ParseResult result = new PolyconfParser().parse(lines);
+        ParseResult result = parser.parse(lines);
 
         assertEquals(2, result.blocks().size());
         assertTrue(result.blocks().get(0).hinted());

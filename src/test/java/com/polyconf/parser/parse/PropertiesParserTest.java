@@ -146,5 +146,16 @@ class PropertiesParserTest {
         assertInstanceOf(ConfigValue.class, a);
         assertEquals("flat", ((ConfigValue) a).asString().orElseThrow());
     }
+
+    @Test
+    void emptyInput() {
+        ConfigSection result = parser.parse(List.of("   ")).section();
+        assertTrue(result.children().isEmpty());
+    }
+
+    @Test
+    void nullInput() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
+    }
 }
 

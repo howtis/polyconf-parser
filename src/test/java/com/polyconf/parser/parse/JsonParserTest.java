@@ -115,4 +115,15 @@ class JsonParserTest {
         assertEquals("a", ((ConfigValue) first.children().get("name")).asString().orElseThrow());
     }
 
+    @Test
+    void emptyInput() {
+        ConfigSection result = parser.parse(List.of("   ")).section();
+        assertTrue(result.children().isEmpty());
+    }
+
+    @Test
+    void nullInput() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
+    }
+
 }

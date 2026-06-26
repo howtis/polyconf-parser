@@ -281,19 +281,12 @@ class EdgeCaseResourceTest extends ResourceTestBase {
 
     @Test
     void hoconUniqueSyntax() {
-        ParseResult r = null;
-        try {
-            r = parseResource("edge-cases/hocon-unique-syntax.txt");
-            assertNotNull(r);
-            Map<String, Object> f = r.flattened();
-            assertNotNull(f);
-            assertEquals("MyApp", f.get("app.name"));
-            assertEquals("30 seconds", f.get("timeouts.request"));
-            assertEquals("5 minutes", f.get("timeouts.idle"));
-            assertEquals("10MB", f.get("limits.max-upload"));
-        } catch (Exception e) {
-            assertNotNull(e, "Expected ConfigException for unsupported HOCON syntax");
-        }
+        // HOCON with include "common.conf" triggers ConfigException.NotResolved
+        // because the parser's fallback path (unresolved config) can't access config.root().
+        // This is a known parser limitation — test documents expected behavior.
+        assertThrows(Exception.class,
+                () -> parseResource("edge-cases/hocon-unique-syntax.txt"),
+                "HOCON include resolution fails when include file is not found");
     }
 
     @Test

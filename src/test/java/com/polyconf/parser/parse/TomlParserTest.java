@@ -154,4 +154,15 @@ class TomlParserTest {
         assertEquals("localhost", ((ConfigValue) db.children().get("host")).asString().orElseThrow());
         assertEquals(5432, ((ConfigValue) db.children().get("port")).asInt().orElseThrow());
     }
+
+    @Test
+    void emptyInput() {
+        ConfigSection result = parser.parse(List.of("   ")).section();
+        assertTrue(result.children().isEmpty());
+    }
+
+    @Test
+    void nullInput() {
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(null));
+    }
 }
