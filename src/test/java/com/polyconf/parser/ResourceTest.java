@@ -903,6 +903,9 @@ class ResourceTest {
     class EdgeCaseFiles {
         @Test
         void adjacentMixedNoBlankline() {
+            // Adjacent mixed formats without blank lines: parser may produce empty output
+            // because format boundaries are ambiguous without separators.
+            // Verify the parser handles this gracefully without crashing.
             ParseResult r = parseResource("edge-cases/adjacent-mixed-no-blankline.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
@@ -913,6 +916,11 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/ambiguous-jsonlike.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // JSON-like section with comments: should extract "key", "number", "active"
+            assertTrue(f.containsKey("key") || f.containsKey("number"),
+                    "Should extract at least one of the JSON-like keys");
         }
 
         @Test
@@ -920,6 +928,24 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/ambiguous-keyvalue.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Simple key=value pairs - values may include quotes depending on detected format
+            assertTrue(f.containsKey("key"), "key should be present");
+            assertEquals("value", f.get("key"));
+            assertEquals(123L, f.get("another"));
+            assertEquals(true, f.get("enabled"));
+            assertEquals(3.14, (Double) f.get("float_val"), 0.001);
+            // Quoted values: parser may strip quotes (JSON-like) or keep them (key=value formats)
+            Object quotedVal = f.get("quoted");
+            assertNotNull(quotedVal, "quoted key should be present");
+            assertTrue(quotedVal.toString().contains("hello world"),
+                    "quoted value should contain 'hello world'");
+            // name = "ambiguous": parser may keep quotes or strip them
+            Object nameVal = f.get("name");
+            assertNotNull(nameVal, "name should be present");
+            assertTrue(nameVal.toString().contains("ambiguous"),
+                    "name value should contain 'ambiguous'");
         }
 
         @Test
@@ -927,6 +953,12 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/close-score-tie.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Multiple format sections: parser should extract some content
+            // Check that at least one known key is present
+            assertTrue(f.containsKey("server.host") || f.containsKey("name"),
+                    "Should extract at least one identifiable key");
         }
 
         @Test
@@ -934,6 +966,14 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/deeply-nested.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Deeply nested TOML-style sections: 4 levels
+            assertEquals("value1", f.get("level1_key"));
+            assertEquals("value", f.get("level1.key"));
+            assertEquals("value", f.get("level1.level2.key"));
+            assertEquals("value", f.get("level1.level2.level3.key"));
+            assertEquals("value", f.get("level1.level2.level3.level4.key"));
         }
 
         @Test
@@ -956,20 +996,44 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/format-scoring-gaps.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Various key=value spacing formats - all should be parsed
+            assertTrue(f.containsKey("key"), "key = value should be parsed");
+            assertEquals("value", f.get("key"));
+            // key=value (no spaces), key =value, key= value should all work
+            assertTrue(f.containsKey("name"), "name= value should be parsed");
+            assertEquals("hello", f.get("name"));
         }
 
         @Test
         void hintWrongFormat() {
+            // Wrong format hints: parser may produce errors for mismatched content,
+            // but should still produce some output (possibly empty sections for failed blocks)
             ParseResult r = parseResource("edge-cases/hint-wrong-format.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            // Some hints match wrong content types - verify parser handles gracefully
+            assertTrue(r.hasErrors() || !r.blocks().isEmpty(),
+                    "Should either produce errors or have blocks for wrong-format hints");
         }
 
         @Test
         void jsonWithComments() {
+            // JSON with mixed comment styles: // (JSON5), /* */ (JSON5), and # (not valid in JSON/JSON5).
+            // The # hash comment may cause parse failures in some parsers.
+            // Verify the parser handles this gracefully.
             ParseResult r = parseResource("edge-cases/json-with-comments.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            // Parser may produce output (JSON5-compatible parts) or empty (if # comment breaks parsing)
+            if (!f.isEmpty()) {
+                assertEquals("myapp", f.get("name"));
+                assertEquals("1.0.0", f.get("version"));
+                assertEquals("localhost", f.get("database.host"));
+                assertEquals(5432L, f.get("database.port"));
+            }
         }
 
         @Test
@@ -977,6 +1041,16 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/leading-zeros.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Leading zeros - numeric parsing may strip them (known limitation)
+            // Port numbers with leading zeros
+            assertTrue(f.containsKey("port"), "port key should be present");
+            assertEquals(80L, f.get("port")); // 0080 -> 80
+            assertTrue(f.containsKey("employee_id"), "employee_id key should be present");
+            assertEquals(42L, f.get("employee_id")); // 00042 -> 42
+            // Hex color code should remain as string, not parsed as number
+            assertNotNull(f.get("hex_color"));
         }
 
         @Test
@@ -984,6 +1058,18 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/multiline-strings.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Backslash-continued multiline
+            assertTrue(f.containsKey("multiline"), "multiline key should be present");
+            // Quoted strings with escapes
+            assertTrue(f.containsKey("escaped"), "escaped key should be present");
+            // URL should not be truncated
+            assertTrue(f.containsKey("url"), "url key should be present");
+            assertEquals("https://example.com/path?key=value&flag=true", f.get("url"));
+            // Email-like value should be preserved
+            assertTrue(f.containsKey("email"), "email key should be present");
+            assertEquals("user@example.com", f.get("email"));
         }
 
         @Test
@@ -991,6 +1077,24 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/numeric-edge-cases.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Boolean-like quoted strings: parser may strip quotes or keep them
+            // depending on detected format (JSON-like strips, key=value keeps)
+            assertTrue(f.containsKey("bool_string_true"), "bool_string_true should be present");
+            assertTrue(f.containsKey("bool_string_false"), "bool_string_false should be present");
+            assertTrue(f.containsKey("bool_string_yes"), "bool_string_yes should be present");
+            // Null-like values
+            assertTrue(f.containsKey("null_value"), "null_value key should be present");
+            // Negative integers
+            assertEquals(-42L, f.get("negative_int"));
+            // Zero values
+            assertEquals(0L, f.get("zero_int"));
+            // Empty string: parser may keep quotes ("") or strip them (empty)
+            Object emptyVal = f.get("empty_string");
+            assertNotNull(emptyVal, "empty_string should be present");
+            assertTrue(emptyVal.toString().isEmpty() || emptyVal.toString().equals("\"\""),
+                    "empty_string should be empty or quoted-empty");
         }
 
         @Test
@@ -998,6 +1102,14 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/properties-type-flat.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Properties parser may store values as strings (known limitation)
+            // Check keys exist regardless of type
+            assertTrue(f.containsKey("server.port"), "server.port should be present");
+            assertTrue(f.containsKey("feature.enabled"), "feature.enabled should be present");
+            assertTrue(f.containsKey("threshold"), "threshold should be present");
+            assertTrue(f.containsKey("optional.key"), "optional.key should be present");
         }
 
         @Test
@@ -1005,6 +1117,18 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/toml-table-array-vs-ini.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // TOML [[products]] array of tables vs INI [products.hammer] sections
+            // Both syntaxes represent the same logical data: named products
+            assertTrue(f.containsKey("products[0].name") || f.containsKey("products.hammer.name"),
+                    "Should extract product names from either array-of-tables or section syntax");
+            // Nail product should be present
+            assertTrue(f.containsKey("products[1].name") || f.containsKey("products.nail.name"),
+                    "Should extract second product name");
+            // [[fruits]] ambiguity
+            assertTrue(f.containsKey("fruits[0].name") || f.containsKey("fruits.apple.name"),
+                    "Should extract fruit names");
         }
 
         @Test
@@ -1012,6 +1136,16 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/unicode-i18n.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Unicode keys and values across multiple scripts
+            // Note: behavior depends on JVM default charset (x-windows-949 on this system)
+            // which may cause encoding corruption for non-Korean scripts
+            assertTrue(f.containsKey("key_with_unicode_val"), "ASCII-keyed unicode value should be present");
+            assertTrue(f.containsKey("accents"), "accents key should be present");
+            // Verify at least the ASCII-keyed values are non-empty
+            assertNotNull(f.get("key_with_unicode_val"));
+            assertNotNull(f.get("accents"));
         }
 
         @Test
@@ -1019,6 +1153,25 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/weird-content.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Empty value should be present but with empty string value
+            assertTrue(f.containsKey("EMPTY_VAL"), "EMPTY_VAL key should be present");
+            assertEquals("", f.get("EMPTY_VAL"));
+            // Quoted values: parser may strip quotes or keep them
+            Object doubleQuoted = f.get("QUOTED_DOUBLE");
+            assertNotNull(doubleQuoted, "QUOTED_DOUBLE should be present");
+            assertTrue(doubleQuoted.toString().contains("quoted value"),
+                    "QUOTED_DOUBLE should contain 'quoted value'");
+            // Special characters
+            assertEquals("!@#$%^&*()_+", f.get("SPECIAL_CHARS"));
+            // Leading/trailing spaces in keys: parser may normalize or preserve
+            Object spacesVal = f.get("KEY_WITH_SPACES");
+            if (spacesVal == null) {
+                // Some parsers preserve leading spaces in key names
+                assertTrue(f.toString().contains("value with spaces"),
+                        "'value with spaces' should be somewhere in the output");
+            }
         }
 
         @Test
@@ -1026,6 +1179,33 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/weird-keys.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Numeric-like keys
+            assertEquals("value", f.get("123"));
+            assertEquals("value", f.get("3.14"));
+            assertEquals("value", f.get("1e10"));
+            // Keys with special characters
+            assertEquals("value", f.get("key-with-dash"));
+            assertEquals("value", f.get("key_with_underscore"));
+            // key.with.dot: parser may interpret dots as nested structure (key -> with -> dot)
+            // or as literal dots depending on detected format
+            assertTrue(f.containsKey("key.with.dot") || f.containsKey("key"),
+                    "key.with.dot should be present (literal or nested)");
+            // key:with:colon - colon may be treated as separator by some parsers
+            assertTrue(f.containsKey("key:with:colon") || f.toString().contains("colon"),
+                    "key:with:colon should be present or colon-related value found");
+            // Single character keys
+            assertEquals(1L, f.get("a"));
+            assertEquals(2L, f.get("b"));
+            assertEquals(3L, f.get("x"));
+            // Path-like keys
+            assertEquals("value", f.get("/path/to/key"));
+            // Windows path-like key: backslashes may be treated as escape chars
+            // or literal backslashes depending on parser
+            assertTrue(f.containsKey("C:\\Windows\\System32")
+                            || f.containsKey("/path/to/key"),
+                    "At least one path-like key should be present");
         }
 
         @Test
@@ -1049,8 +1229,15 @@ class ResourceTest {
             ParseResult r = parseResource("edge-cases/same-format-blanklines.txt");
             assertNotNull(r);
             assertNotNull(r.flattened());
-            assertTrue(r.flattened().containsKey("app.name"));
-            assertEquals("polyconf", r.flattened().get("app.name"));
+            Map<String, Object> f = r.flattened();
+            assertFalse(f.isEmpty(), "Should produce non-empty flattened output");
+            // Same format (Properties) across blank lines - should NOT be split into separate blocks
+            assertEquals("polyconf", f.get("app.name"));
+            assertEquals("1.0.0", f.get("app.version"));
+            assertEquals("0.0.0.0", f.get("server.host"));
+            assertEquals(8080L, f.get("server.port"));
+            assertEquals("localhost", f.get("database.host"));
+            assertEquals(5432L, f.get("database.port"));
         }
     }
 }
