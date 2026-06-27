@@ -1,0 +1,5 @@
+# @fmt:properties
+key = value
+<config>
+  <host>localhost</host>
+</config>

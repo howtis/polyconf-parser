@@ -1,0 +1,5 @@
+export APP_NAME=myapp
+export APP_PORT=8080
+<config>
+  <debug>true</debug>
+</config>

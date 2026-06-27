@@ -1,0 +1,6 @@
+{
+  "name": "app",
+  "version": "1.0"
+}
+export DATABASE_HOST=localhost
+export DATABASE_PORT=5432

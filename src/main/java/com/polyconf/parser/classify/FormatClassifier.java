@@ -2,6 +2,7 @@ package com.polyconf.parser.classify;
 
 import com.polyconf.parser.model.Format;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -84,6 +85,56 @@ public final class FormatClassifier {
             scoreLine(t, scores);
         }
         return scores;
+    }
+
+    public static List<Format> classifyPerLine(List<String> lines) {
+        if (lines == null) {
+            throw new IllegalArgumentException("lines must not be null");
+        }
+        List<Format> result = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            String t = line.strip();
+            if (t.isEmpty() || HINT_LINE.matcher(line).matches()) {
+                result.add(Format.UNKNOWN);
+                continue;
+            }
+            result.add(classifySingleLine(t));
+        }
+        return result;
+    }
+
+    private static Format classifySingleLine(String strippedLine) {
+        // Bare braces are uniquely JSON.
+        // Bare brackets ([, ]) are NOT treated as JSON because they also
+        // appear as TOML array delimiters (e.g., "authors = [" followed by "]").
+        if (strippedLine.equals("{") || strippedLine.equals("}")) {
+            return Format.JSON;
+        }
+
+        List<Token> tokens = LineTokenizer.tokenize(strippedLine);
+        Format bestFormat = Format.UNKNOWN;
+        int bestScore = 0;
+        boolean tie = false;
+
+        for (Format format : Format.registeredFormats()) {
+            FormatDetector detector = format.detector().orElse(null);
+            if (detector == null) {
+                continue;
+            }
+            int s = detector.score(tokens);
+            if (s > bestScore) {
+                bestScore = s;
+                bestFormat = format;
+                tie = false;
+            } else if (s == bestScore && bestScore > 0) {
+                tie = true;
+            }
+        }
+
+        if (bestScore == 0 || tie) {
+            return Format.UNKNOWN;
+        }
+        return bestFormat;
     }
 
     private static void scoreLine(String t, Map<Format, Integer> scores) {

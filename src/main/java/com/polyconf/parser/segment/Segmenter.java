@@ -24,43 +24,15 @@ public final class Segmenter {
                 .map(Hint::line)
                 .collect(Collectors.toSet());
 
+        List<Integer> depths = computeLineDepths(lines);
+
         List<Segment> segments = new ArrayList<>();
         int blockStart = -1;
-        int braceDepth = 0;
-        int bracketDepth = 0;
-        boolean inSingleQuote = false;
-        boolean inDoubleQuote = false;
 
         for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i);
-            boolean isBlank = line.isBlank();
+            boolean isBlank = lines.get(i).isBlank();
             boolean isHint = hintLines.contains(i);
-
-            // Track brace/bracket depth to avoid splitting inside {} or []
-            for (int j = 0; j < line.length(); j++) {
-                char c = line.charAt(j);
-                if (c == '\\' && (inSingleQuote || inDoubleQuote) && j + 1 < line.length()) {
-                    j++;
-                    continue;
-                }
-                if (c == '\'' && !inDoubleQuote) {
-                    inSingleQuote = !inSingleQuote;
-                    continue;
-                }
-                if (c == '"' && !inSingleQuote) {
-                    inDoubleQuote = !inDoubleQuote;
-                    continue;
-                }
-                if (inSingleQuote || inDoubleQuote) {
-                    continue;
-                }
-                if (c == '{') braceDepth++;
-                else if (c == '}') braceDepth--;
-                else if (c == '[') bracketDepth++;
-                else if (c == ']') bracketDepth--;
-            }
-
-            boolean insideBlock = braceDepth > 0 || bracketDepth > 0;
+            boolean insideBlock = depths.get(i) > 0;
 
             if (blockStart < 0) {
                 if (!isBlank) {
@@ -82,5 +54,54 @@ public final class Segmenter {
         }
 
         return List.copyOf(segments);
+    }
+
+    /**
+     * Computes cumulative brace/bracket/XML-tag depth after each line,
+     * respecting quote state to avoid counting braces inside strings.
+     * Index-aligned with the input lines list.
+     */
+    public static List<Integer> computeLineDepths(List<String> lines) {
+        if (lines == null) {
+            throw new IllegalArgumentException("lines must not be null");
+        }
+        List<Integer> depths = new ArrayList<>(lines.size());
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        int xmlDepth = 0;
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+
+        for (String line : lines) {
+            for (int j = 0; j < line.length(); j++) {
+                char c = line.charAt(j);
+                if (c == '\\' && (inSingleQuote || inDoubleQuote) && j + 1 < line.length()) {
+                    j++;
+                    continue;
+                }
+                if (c == '\'' && !inDoubleQuote) {
+                    inSingleQuote = !inSingleQuote;
+                    continue;
+                }
+                if (c == '"' && !inSingleQuote) {
+                    inDoubleQuote = !inDoubleQuote;
+                    continue;
+                }
+                if (inSingleQuote || inDoubleQuote) {
+                    continue;
+                }
+                if (c == '{') braceDepth++;
+                else if (c == '}') braceDepth--;
+                else if (c == '[') bracketDepth++;
+                else if (c == ']') bracketDepth--;
+                else if (c == '<' && j + 1 < line.length()) {
+                    char next = line.charAt(j + 1);
+                    if (next == '/') xmlDepth--;
+                    else if (next != '?' && next != '!') xmlDepth++;
+                }
+            }
+            depths.add(braceDepth + bracketDepth + xmlDepth);
+        }
+        return depths;
     }
 }

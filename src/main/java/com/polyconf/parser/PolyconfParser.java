@@ -75,6 +75,9 @@ public final class PolyconfParser {
         List<Hint> hints = HintParser.parse(lines);
         List<Segment> segments = Segmenter.segment(lines, hints);
         segments = mergeAdjacentSegments(segments, lines, hints);
+        segments = segments.stream()
+                .flatMap(s -> subSegment(s, lines, hints).stream())
+                .toList();
 
         List<BlockResult> blockResults = new ArrayList<>();
         List<ConfigSection> sections = new ArrayList<>();
@@ -197,6 +200,77 @@ public final class PolyconfParser {
         ParserResult fallbackResult = FALLBACK_PARSER.parse(blockLines);
         diagnostics.addAll(fallbackResult.diagnostics());
         return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.0, false, fallbackResult.section());
+    }
+
+    private List<Segment> subSegment(Segment block, List<String> lines, List<Hint> hints) {
+        // Skip hinted blocks — user intent takes priority
+        if (findHint(hints, block.startLine()) != null) {
+            return List.of(block);
+        }
+        // Single-line blocks have no room for internal splits
+        if (block.startLine() == block.endLine()) {
+            return List.of(block);
+        }
+
+        List<String> blockLines = lines.subList(block.startLine(), block.endLine() + 1);
+        List<Format> perLineFormats = FormatClassifier.classifyPerLine(blockLines);
+        List<Integer> depths = Segmenter.computeLineDepths(blockLines);
+
+        int n = perLineFormats.size();
+
+        // Walk through lines and find split boundaries where:
+        // 1. Two adjacent lines have different non-UNKNOWN formats
+        // 2. The left line ends at depth 0 (complete at the top level)
+        // 3. The format change has strong structural evidence
+        List<Integer> splitAfter = new ArrayList<>();
+        for (int i = 0; i < n - 1; i++) {
+            Format fmtA = perLineFormats.get(i);
+            Format fmtB = perLineFormats.get(i + 1);
+            if (fmtA == Format.UNKNOWN || fmtB == Format.UNKNOWN || fmtA == fmtB) {
+                continue;
+            }
+            if (depths.get(i) != 0) {
+                continue;
+            }
+            if (!isStrongBoundary(fmtA, blockLines.get(i), fmtB, blockLines.get(i + 1))) {
+                continue;
+            }
+            splitAfter.add(i);
+        }
+
+        if (splitAfter.isEmpty()) {
+            return List.of(block);
+        }
+
+        List<Segment> result = new ArrayList<>();
+        int start = 0;
+        for (int splitIdx : splitAfter) {
+            result.add(new Segment(block.startLine() + start, block.startLine() + splitIdx));
+            start = splitIdx + 1;
+        }
+        result.add(new Segment(block.startLine() + start, block.endLine()));
+        return result;
+    }
+
+    /**
+     * Returns true when the format boundary has strong structural evidence.
+     * Accepts the boundary if:
+     * - Either format is XML (unique {@code <} delimiter), OR
+     * - Either anchor line is solely a JSON brace/bracket ({ } [ ]),
+     *   indicating a clear structural delimiter, not KDL/HOCON syntax.
+     * This prevents spurious splits between key=value-based formats
+     * (TOML, PROPERTIES, INI, KDL) that share syntax.
+     */
+    private static boolean isStrongBoundary(Format fmtA, String lineA, Format fmtB, String lineB) {
+        if (fmtA == Format.XML || fmtB == Format.XML) {
+            return true;
+        }
+        return isBareJsonDelimiter(lineA) || isBareJsonDelimiter(lineB);
+    }
+
+    private static boolean isBareJsonDelimiter(String line) {
+        String t = line.strip();
+        return t.equals("{") || t.equals("}");
     }
 
     private static Hint findHint(List<Hint> hints, int line) {

@@ -1,0 +1,10 @@
+{
+  "name": "app",
+  "config": {
+    "debug": true,
+    "port": 8080
+  }
+}
+<server>
+  <host>localhost</host>
+</server>
