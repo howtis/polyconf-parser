@@ -27,15 +27,14 @@ public final class ConfigAccessor {
             result.put(key, value.rawValue());
         } else if (node instanceof ConfigSection section) {
             String keyPrefix = prefix.isEmpty() ? section.key() : prefix + "." + section.key();
-            for (ConfigNode child : section.children().values()) {
-                if (child instanceof ConfigValue cv && isSelfMarker(cv.key())) {
-                    result.put(keyPrefix, cv.rawValue());
-                } else {
-                    flatten(child, keyPrefix, result);
-                }
+            var selfNode = section.selfValue();
+            if (selfNode.isPresent() && selfNode.get() instanceof ConfigValue cv) {
+                result.put(keyPrefix, cv.rawValue());
             }
-            // sections without self-marker are structural parents; their children
-            // are already flattened with the section's prefix above
+            for (ConfigNode child : section.children().values()) {
+                if (selfNode.isPresent() && child == selfNode.get()) continue;
+                flatten(child, keyPrefix, result);
+            }
         } else if (node instanceof ConfigList list) {
             String key = prefix.isEmpty() ? list.key() : prefix + "." + list.key();
             for (int i = 0; i < list.items().size(); i++) {
@@ -44,12 +43,9 @@ public final class ConfigAccessor {
                 if (item instanceof ConfigValue v) {
                     result.put(idxPrefix, v.rawValue());
                 } else if (item instanceof ConfigSection section) {
-                    // Check for self-marker (#text or #self) -- treat section as a leaf value
-                    var selfChild = section.children().values().stream()
-                            .filter(c -> c instanceof ConfigValue cv && isSelfMarker(cv.key()))
-                            .findFirst();
-                    if (selfChild.isPresent()) {
-                        result.put(idxPrefix, ((ConfigValue) selfChild.get()).rawValue());
+                    var selfNode = section.selfValue();
+                    if (selfNode.isPresent() && selfNode.get() instanceof ConfigValue cv) {
+                        result.put(idxPrefix, cv.rawValue());
                     } else {
                         for (ConfigNode child : section.children().values()) {
                             flatten(child, idxPrefix, result);
@@ -106,10 +102,6 @@ public final class ConfigAccessor {
 
     public Stream<ConfigNode> walk() {
         return walk(root);
-    }
-
-    private static boolean isSelfMarker(String key) {
-        return "#text".equals(key) || "#self".equals(key);
     }
 
     private Stream<ConfigNode> walk(ConfigNode node) {

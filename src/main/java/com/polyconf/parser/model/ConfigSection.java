@@ -35,4 +35,16 @@ public record ConfigSection(
         ConfigNode node = children.get(key);
         return node instanceof ConfigList l ? Optional.of(l) : Optional.empty();
     }
+
+    public boolean hasSelfValue() {
+        return children.containsKey("#text") || children.containsKey("#self");
+    }
+
+    public Optional<ConfigNode> selfValue() {
+        ConfigNode node = children.get("#text");
+        if (node instanceof ConfigValue) return Optional.of(node);
+        node = children.get("#self");
+        if (node instanceof ConfigValue) return Optional.of(node);
+        return Optional.empty();
+    }
 }

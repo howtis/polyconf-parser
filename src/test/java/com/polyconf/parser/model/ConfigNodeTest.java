@@ -71,6 +71,75 @@ class ConfigNodeTest {
         assertEquals("localhost", ((ConfigValue) resolved.get()).rawValue());
     }
 
+    // --- ConfigSection self-value ---
+
+    @Test
+    void sectionHasSelfValueWithTextMarker() {
+        Provenance p = new Provenance(0, Format.XML, "", 1.0);
+        ConfigSection section = new ConfigSection("name", p, "name");
+        section.children().put("#text", new ConfigValue("#text", "hello", ValueType.STRING, p, "name.#text"));
+        assertTrue(section.hasSelfValue());
+    }
+
+    @Test
+    void sectionHasSelfValueWithSelfMarker() {
+        Provenance p = new Provenance(0, Format.PROPERTIES, "", 1.0);
+        ConfigSection section = new ConfigSection("db", p, "db");
+        section.children().put("#self", new ConfigValue("#self", "fallback", ValueType.STRING, p, "db.#self"));
+        assertTrue(section.hasSelfValue());
+    }
+
+    @Test
+    void sectionHasSelfValueFalseWhenNoMarker() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("server", p, "server");
+        section.children().put("host", new ConfigValue("host", "localhost", ValueType.STRING, p, "server.host"));
+        assertFalse(section.hasSelfValue());
+    }
+
+    @Test
+    void sectionSelfValueGetsTextMarker() {
+        Provenance p = new Provenance(0, Format.XML, "", 1.0);
+        ConfigSection section = new ConfigSection("name", p, "name");
+        ConfigValue textValue = new ConfigValue("#text", "hello", ValueType.STRING, p, "name.#text");
+        section.children().put("#text", textValue);
+        assertTrue(section.selfValue().isPresent());
+        assertEquals("hello", ((ConfigValue) section.selfValue().get()).asString().orElseThrow());
+    }
+
+    @Test
+    void sectionSelfValueGetsSelfMarker() {
+        Provenance p = new Provenance(0, Format.PROPERTIES, "", 1.0);
+        ConfigSection section = new ConfigSection("db", p, "db");
+        ConfigValue selfValue = new ConfigValue("#self", "fallback", ValueType.STRING, p, "db.#self");
+        section.children().put("#self", selfValue);
+        assertTrue(section.selfValue().isPresent());
+        assertEquals("fallback", ((ConfigValue) section.selfValue().get()).asString().orElseThrow());
+    }
+
+    @Test
+    void sectionSelfValueEmptyWhenNoMarker() {
+        Provenance p = new Provenance(0, Format.TOML, "", 1.0);
+        ConfigSection section = new ConfigSection("server", p, "server");
+        section.children().put("host", new ConfigValue("host", "localhost", ValueType.STRING, p, "server.host"));
+        assertFalse(section.selfValue().isPresent());
+    }
+
+    @Test
+    void flattenTreatsSelfValueAsLeaf() {
+        Provenance p = new Provenance(0, Format.XML, "", 1.0);
+        ConfigSection root = new ConfigSection("", p, "");
+        ConfigSection name = new ConfigSection("name", p, "name");
+        name.children().put("#text", new ConfigValue("#text", "John", ValueType.STRING, p, "name.#text"));
+        root.children().put("name", name);
+
+        ConfigAccessor accessor = new ConfigAccessor(root);
+        Map<String, Object> flat = accessor.asFlattenedMap();
+
+        assertEquals("John", flat.get("name"));
+        assertFalse(flat.containsKey("name.#text"));
+    }
+
     @Test
     void configAccessorFlattenedMap() {
         Provenance p = new Provenance(0, Format.TOML, "", 1.0);
