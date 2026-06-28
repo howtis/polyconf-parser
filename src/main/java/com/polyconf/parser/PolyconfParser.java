@@ -8,19 +8,28 @@ import com.polyconf.parser.merge.MergePolicy;
 import com.polyconf.parser.merge.MergeResult;
 import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.BlockResult;
+import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
+import com.polyconf.parser.model.ConfigValue;
+import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.Format;
 import com.polyconf.parser.model.ParseResult;
 import com.polyconf.parser.model.ParserResult;
+import com.polyconf.parser.model.Provenance;
 import com.polyconf.parser.format.PropertiesFormat;
 import com.polyconf.parser.parse.LenientParser;
+import com.polyconf.parser.parse.ValueInference;
 import com.polyconf.parser.segment.Segment;
 import com.polyconf.parser.segment.Segmenter;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class PolyconfParser {
@@ -184,6 +193,42 @@ public final class PolyconfParser {
         }
 
         // Classifier couldn't decide -- trial-and-error fallback.
+        BlockResult trialResult = tryTrialAndError(blockLines, startLine, endLine, diagnostics);
+        if (trialResult != null) {
+            // If trial-and-error produced only flat key=value pairs (no sections),
+            // try indentation-based recovery — it may preserve structure that
+            // flat parsers like PropertiesParser ignore.
+            if (isFlat(trialResult.section())) {
+                ConfigSection recovered = recoverStructuredFallback(blockLines, startLine);
+                if (hasStructure(recovered)) {
+                    diagnostics.add(new BlockDiagnostic(startLine, endLine,
+                            "Recovered structure via indentation-based fallback", DiagnosticLevel.WARNING));
+                    return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.15, false, recovered);
+                }
+            }
+            return trialResult;
+        }
+
+        // Nothing matched — try indentation-based structure recovery
+        ConfigSection recovered = recoverStructuredFallback(blockLines, startLine);
+        if (!recovered.children().isEmpty()) {
+            diagnostics.add(new BlockDiagnostic(startLine, endLine,
+                    "Recovered structure via indentation-based fallback", DiagnosticLevel.WARNING));
+            return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.15, false, recovered);
+        }
+
+        // Last resort: flat PropertiesParser
+        ParserResult fallbackResult = FALLBACK_PARSER.parse(blockLines);
+        diagnostics.addAll(fallbackResult.diagnostics());
+        return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.0, false, fallbackResult.section());
+    }
+
+    private BlockResult tryTrialAndError(
+            List<String> blockLines,
+            int startLine,
+            int endLine,
+            List<BlockDiagnostic> diagnostics
+    ) {
         for (Format format : TRIAL_FORMATS) {
             LenientParser parser = format.parser().orElseThrow();
             if (!parser.isPlausible(blockLines)) {
@@ -195,11 +240,147 @@ public final class PolyconfParser {
                 return new BlockResult(startLine, endLine, format, 0.5, false, pr.section());
             }
         }
+        return null;
+    }
 
-        // Nothing matched -- use fallback
-        ParserResult fallbackResult = FALLBACK_PARSER.parse(blockLines);
-        diagnostics.addAll(fallbackResult.diagnostics());
-        return new BlockResult(startLine, endLine, Format.UNKNOWN, 0.0, false, fallbackResult.section());
+    private static boolean isFlat(ConfigSection section) {
+        if (section.children().isEmpty()) {
+            return false; // empty is not "flat"
+        }
+        return section.children().values().stream().noneMatch(n -> n instanceof ConfigSection);
+    }
+
+    private static boolean hasStructure(ConfigSection section) {
+        return section.children().values().stream().anyMatch(n -> n instanceof ConfigSection);
+    }
+
+    /**
+     * Attempts to recover indentation-based structure from key-value lines.
+     * Used as a structured fallback when no format parser succeeds.
+     *
+     * <p>The algorithm:
+     * <ol>
+     *   <li>Compute leading whitespace depth for each line.</li>
+     *   <li>For each non-blank, non-comment line, find the first '=' or ':' separator.</li>
+     *   <li>Lines with no value after the separator become section headers.</li>
+     *   <li>Lines with a value become key-value pairs, placed under the current
+     *       section (determined by indentation depth).</li>
+     *   <li>Dotted keys (e.g., {@code database.host}) create nested sections.</li>
+     * </ol>
+     */
+    private static ConfigSection recoverStructuredFallback(List<String> blockLines, int startLine) {
+        int n = blockLines.size();
+        int[] indents = new int[n];
+        for (int i = 0; i < n; i++) {
+            indents[i] = computeIndent(blockLines.get(i));
+        }
+
+        Map<String, ConfigNode> rootChildren = new LinkedHashMap<>();
+        Deque<Context> stack = new ArrayDeque<>();
+        stack.push(new Context(-1, rootChildren));
+
+        for (int i = 0; i < n; i++) {
+            String raw = blockLines.get(i);
+            String trimmed = raw.strip();
+
+            if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("!")) {
+                continue;
+            }
+
+            int eqIdx = trimmed.indexOf('=');
+            int colIdx = trimmed.indexOf(':');
+            int sepIdx = (eqIdx >= 0 && colIdx >= 0) ? Math.min(eqIdx, colIdx) : Math.max(eqIdx, colIdx);
+            if (sepIdx < 0) {
+                continue;
+            }
+
+            String key = trimmed.substring(0, sepIdx).strip();
+            String value = trimmed.substring(sepIdx + 1).strip();
+            int indent = indents[i];
+
+            // Pop stack until parent indentation is less than current
+            while (stack.size() > 1 && stack.peek().indent >= indent) {
+                stack.pop();
+            }
+            Map<String, ConfigNode> parent = stack.peek().children;
+
+            if (value.isEmpty()) {
+                // Section header
+                ConfigSection section = new ConfigSection(key,
+                        new LinkedHashMap<>(),
+                        new Provenance(startLine + i, null, raw, 0.15),
+                        "");
+                ConfigNode existing = parent.get(key);
+                if (existing instanceof ConfigSection s) {
+                    for (var entry : s.children().entrySet()) {
+                        section.children().putIfAbsent(entry.getKey(), entry.getValue());
+                    }
+                } else if (existing instanceof ConfigValue v) {
+                    section.children().put("#self", v);
+                }
+                parent.put(key, section);
+                stack.push(new Context(indent, section.children()));
+            } else {
+                // Key-value pair
+                insertDottedKey(parent, key, value,
+                        new Provenance(startLine + i, null, raw, 0.15));
+            }
+        }
+
+        return new ConfigSection("", rootChildren, null, "");
+    }
+
+    private static void insertDottedKey(
+            Map<String, ConfigNode> parent,
+            String key,
+            String value,
+            Provenance provenance
+    ) {
+        String[] parts = key.split("\\.");
+        if (parts.length > 1) {
+            Map<String, ConfigNode> current = parent;
+            for (int p = 0; p < parts.length - 1; p++) {
+                String part = parts[p];
+                ConfigNode existing = current.get(part);
+                if (existing instanceof ConfigSection s) {
+                    current = s.children();
+                } else {
+                    ConfigSection ns = new ConfigSection(part,
+                            new LinkedHashMap<>(), null, "");
+                    if (existing instanceof ConfigValue v) {
+                        ns.children().put("#self", v);
+                    }
+                    current.put(part, ns);
+                    current = ns.children();
+                }
+            }
+            String leaf = parts[parts.length - 1];
+            current.put(leaf, ValueInference.createValue(leaf, value, provenance));
+        } else {
+            parent.put(key, ValueInference.createValue(key, value, provenance));
+        }
+    }
+
+    private static int computeIndent(String line) {
+        int indent = 0;
+        for (int i = 0; i < line.length(); i++) {
+            char ch = line.charAt(i);
+            if (ch == ' ' || ch == '\t') {
+                indent++;
+            } else {
+                break;
+            }
+        }
+        return indent;
+    }
+
+    private static final class Context {
+        final int indent;
+        final Map<String, ConfigNode> children;
+        Context(int indent, Map<String, ConfigNode> children) {
+            this.indent = indent;
+            this.children = children;
+        }
     }
 
     private List<Segment> subSegment(Segment block, List<String> lines, List<Hint> hints) {
