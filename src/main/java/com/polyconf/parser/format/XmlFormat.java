@@ -36,9 +36,81 @@ public final class XmlFormat {
         private static final double MAX_RAW = 14.0;
 
         @Override
+        public int signaturePriority() {
+            return 95;
+        }
+
+        @Override
+        public boolean hasSignature(List<String> lines) {
+            boolean hasXmlDeclaration = false;
+            boolean hasSelfClosing = false;
+            boolean hasCdata = false;
+            boolean hasCloseTag = false;
+            int openTagCount = 0;
+
+            for (String line : lines) {
+                String stripped = line.strip();
+                if (stripped.isEmpty()) continue;
+
+                if (!hasXmlDeclaration && stripped.startsWith("<?xml")) {
+                    hasXmlDeclaration = true;
+                }
+                if (!hasCdata && stripped.contains("<![CDATA[")) {
+                    hasCdata = true;
+                }
+                if (!hasSelfClosing && stripped.contains("/>")) {
+                    hasSelfClosing = true;
+                }
+                if (stripped.startsWith("</")) {
+                    hasCloseTag = true;
+                }
+                // Detect XML open tags: starts with <, then a word character (tag name),
+                // not <? or <!-- or <![ or </
+                if (stripped.startsWith("<")
+                        && !stripped.startsWith("<?")
+                        && !stripped.startsWith("<!--")
+                        && !stripped.startsWith("<![")
+                        && !stripped.startsWith("</")) {
+                    openTagCount++;
+                }
+            }
+
+            return hasXmlDeclaration
+                    || hasCdata
+                    || hasSelfClosing
+                    || (hasCloseTag && openTagCount > 0);
+        }
+
+        @Override
         public double score(List<Token> tokens) {
             int raw = 0;
             if (tokens.isEmpty()) return 0.5;
+
+            // XML needs both < and > on the same line to be plausible;
+            // lone < appears in YAML merge keys (<<), Markdown, etc.
+            // Exception: if < is followed by a word starting with [a-zA-Z_],
+            // it's a legitimate XML tag name (multi-line tags may not have > yet).
+            boolean hasLt = false;
+            boolean hasGt = false;
+            boolean hasXmlTagName = false;
+            for (int i = 0; i < tokens.size(); i++) {
+                Token t = tokens.get(i);
+                if (t.kind() == TokenKind.DELIMITER) {
+                    if ("<".equals(t.text())) hasLt = true;
+                    if (">".equals(t.text())) hasGt = true;
+                }
+                // Check for XML tag name: < followed by a valid word starting with [a-zA-Z_]
+                if ("<".equals(t.text()) && i + 1 < tokens.size()) {
+                    Token next = tokens.get(i + 1);
+                    if (next.kind() == TokenKind.WORD
+                            && !next.text().isEmpty()
+                            && Character.isLetter(next.text().charAt(0))) {
+                        hasXmlTagName = true;
+                    }
+                }
+            }
+            if (!hasLt && !hasGt) return 0.5;
+            if (hasLt && !hasGt && !hasXmlTagName) return 0.5; // not XML without closing >
 
             Token first = tokens.get(0);
 

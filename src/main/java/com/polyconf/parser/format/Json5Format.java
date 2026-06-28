@@ -115,14 +115,30 @@ public final class Json5Format {
             try {
                 return JSON5.parse(text);
             } catch (Json5Exception e) {
-                System.err.println("=== Json5Parser parse error ===");
-                System.err.println("Message: " + e.getMessage());
+                // Strip #-comment lines and retry before balancing delimiters
+                String stripped = stripHashComments(text);
+                if (!stripped.equals(text)) {
+                    try {
+                        return JSON5.parse(stripped);
+                    } catch (Json5Exception ignored) {
+                        // fall through
+                    }
+                }
                 String balanced = balanceDelimiters(text);
                 if (balanced != null) {
                     try {
                         return JSON5.parse(balanced);
                     } catch (Json5Exception ignored) {
-                        // fall through to null return
+                        // fall through
+                    }
+                    // Retry with hash comments stripped
+                    String strippedBalanced = stripHashComments(balanced);
+                    if (!strippedBalanced.equals(balanced)) {
+                        try {
+                            return JSON5.parse(strippedBalanced);
+                        } catch (Json5Exception ignored2) {
+                            // fall through
+                        }
                     }
                 }
                 return null;
@@ -178,6 +194,29 @@ public final class Json5Format {
             sb.append("]".repeat(Math.max(0, bracketDepth)));
             sb.append("}".repeat(Math.max(0, braceDepth)));
 
+            return sb.toString();
+        }
+
+        /**
+         * Strip lines that are exclusively #-style comments (not valid in JSON5).
+         */
+        private static String stripHashComments(String text) {
+            StringBuilder sb = new StringBuilder();
+            for (String line : text.split("\n", -1)) {
+                String stripped = line.strip();
+                if (stripped.startsWith("#") && !stripped.startsWith("#true")
+                        && !stripped.startsWith("#false") && !stripped.startsWith("#null")) {
+                    if (!sb.isEmpty()) {
+                        sb.append('\n');
+                    }
+                    sb.append(""); // replace with blank line to preserve line numbers
+                    continue;
+                }
+                if (!sb.isEmpty()) {
+                    sb.append('\n');
+                }
+                sb.append(line);
+            }
             return sb.toString();
         }
 

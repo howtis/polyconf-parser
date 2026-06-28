@@ -247,11 +247,11 @@ public final class PolyconfParser {
         if (section.children().isEmpty()) {
             return false; // empty is not "flat"
         }
-        return section.children().values().stream().noneMatch(n -> n instanceof ConfigSection);
+        return section.children().values().stream().noneMatch(ConfigSection.class::isInstance);
     }
 
     private static boolean hasStructure(ConfigSection section) {
-        return section.children().values().stream().anyMatch(n -> n instanceof ConfigSection);
+        return section.children().values().stream().anyMatch(ConfigSection.class::isInstance);
     }
 
     /**
@@ -459,7 +459,17 @@ public final class PolyconfParser {
         if (isSectionHeader(lineB)) {
             return true;
         }
-        return isBareJsonDelimiter(lineA) || isBareJsonDelimiter(lineB);
+        // Bare { and } delimiters are only strong boundaries against
+        // formats that do not natively use braces for their own blocks.
+        // KDL, HOCON, and JSON5 all use {} for nested structure, so a }
+        // closing a KDL node next to a KDL line is not a format boundary.
+        if (isBareJsonDelimiter(lineA) && fmtB != Format.KDL && fmtB != Format.HOCON && fmtB != Format.JSON5) {
+            return true;
+        }
+        if (isBareJsonDelimiter(lineB) && fmtA != Format.KDL && fmtA != Format.HOCON && fmtA != Format.JSON5) {
+            return true;
+        }
+        return false;
     }
 
     private static boolean isBareJsonDelimiter(String line) {

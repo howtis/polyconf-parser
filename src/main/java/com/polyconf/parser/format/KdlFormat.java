@@ -81,11 +81,17 @@ public final class KdlFormat {
 
             // KDL nodes with arguments: WORD followed by WORD or QUOTED (no =)
             // e.g. "host \"localhost\"" or "port 8080"
+            // Require 3+ tokens for bare WORD+WORD (avoids false hits on
+            // plain text like "Verse 1"), but allow 2 tokens for WORD+QUOTED.
             for (int i = 1; i < tokens.size(); i++) {
                 Token prev = tokens.get(i - 1);
                 Token curr = tokens.get(i);
-                if (prev.kind() == TokenKind.WORD
-                        && (curr.kind() == TokenKind.WORD || curr.kind() == TokenKind.QUOTED)) {
+                boolean isQuotedArg = prev.kind() == TokenKind.WORD
+                        && curr.kind() == TokenKind.QUOTED;
+                boolean isMultiWordArg = tokens.size() >= 3
+                        && prev.kind() == TokenKind.WORD
+                        && curr.kind() == TokenKind.WORD;
+                if (isQuotedArg || isMultiWordArg) {
                     // Make sure there's no = between them
                     boolean hasEquals = false;
                     for (Token token : tokens) {
@@ -95,7 +101,7 @@ public final class KdlFormat {
                         }
                     }
                     if (!hasEquals) {
-                        raw += 2;
+                        raw += isQuotedArg ? 2 : 1;
                         break;
                     }
                 }
@@ -128,12 +134,19 @@ public final class KdlFormat {
             boolean hasDoubleSlashComment = false;
             boolean hasBraceBlock = false;
             boolean hasKdlNode = false;
+            boolean hasHashComment = false;
 
             for (String line : lines) {
                 String stripped = line.strip();
                 if (stripped.isEmpty()) continue;
                 if (stripped.startsWith("//") || stripped.startsWith("/*")) {
                     hasDoubleSlashComment = true;
+                    continue;
+                }
+                // Hash comments signal non-KDL formats (TOML, YAML, INI, Properties, Dotenv).
+                if (stripped.startsWith("#") && !stripped.startsWith("#true")
+                        && !stripped.startsWith("#false") && !stripped.startsWith("#null")) {
+                    hasHashComment = true;
                     continue;
                 }
 
@@ -148,20 +161,31 @@ public final class KdlFormat {
                 if (stripped.contains("{")) {
                     hasBraceBlock = true;
                 }
-                // KDL node: a line with '{' preceded by non-whitespace content without ':'
-                // (e.g., "server {", "features {"). This distinguishes from JSON's bare "{"
-                // and JSON sub-objects like '"key": {'.
+                // KDL node: a line with '{' preceded by non-whitespace content without
+                // colon, and not XML-tag-like (starting with '<').
+                // Exclude TOML inline tables: "key = {" (space-equals-space before brace),
+                // but accept KDL properties: "key=value {" (tight equals, part of KDL syntax).
+                // Also exclude backslash-prefixed content (regex quantifiers like \d{3}).
                 if (!hasKdlNode && stripped.contains("{")) {
                     int bracePos = stripped.indexOf('{');
                     String beforeBrace = stripped.substring(0, bracePos).strip();
-                    if (!beforeBrace.isEmpty() && !beforeBrace.contains(":")) {
+                    if (!beforeBrace.isEmpty()
+                            && !beforeBrace.contains(":")
+                            && !beforeBrace.contains("\\")
+                            && !beforeBrace.matches(".*[\\s=]=\\s*$")
+                            && !stripped.startsWith("<")) {
                         hasKdlNode = true;
                     }
                 }
             }
 
+            // Hash comments in a file strongly suggest it's not KDL.
+            if (hasHashComment && !hasKdlSignal) {
+                return false;
+            }
+
             return hasKdlSignal
-                    || (hasDoubleSlashComment && hasBraceBlock)
+                    || (hasDoubleSlashComment && hasBraceBlock && !hasHashComment)
                     || (hasKdlNode && hasBraceBlock);
         }
     }
@@ -175,17 +199,40 @@ public final class KdlFormat {
             if (lines == null || lines.isEmpty()) {
                 return false;
             }
-            String text = String.join(" ", lines);
-            // KDL-unique tokens must be present — {} and ; alone appear in
-            // many formats (JSON, TOML inline tables, C-family source).
-            boolean hasKdlSignal = text.contains("/-")
-                    || text.contains("#true")
-                    || text.contains("#false")
-                    || text.contains("#null");
-            boolean hasKdlComment = text.contains("//");
-            boolean hasBraceBlock = text.contains("{");
-            // Also accept explicit KDL statement terminator as a strong signal
-            return hasKdlSignal || (hasKdlComment && hasBraceBlock) || text.contains(";");
+            // Per-line signals: // and { must appear at line level, not
+            // embedded in values like https:// or \d{3}.
+            boolean hasKdlComment = false;
+            boolean hasBraceBlock = false;
+            boolean hasKdlSignal = false;
+            boolean hasSemicolon = false;
+
+            for (String line : lines) {
+                String stripped = line.strip();
+                if (stripped.isEmpty()) continue;
+
+                // Quick reject: block starting with { or [ is JSON/JSON5
+                if (stripped.startsWith("{") || stripped.startsWith("[")) {
+                    return false;
+                }
+
+                if (!hasKdlComment && (stripped.startsWith("//") || stripped.startsWith("/*"))) {
+                    hasKdlComment = true;
+                }
+                if (!hasBraceBlock && stripped.contains("{")) {
+                    hasBraceBlock = true;
+                }
+                if (!hasKdlSignal && (stripped.contains("/-")
+                        || stripped.contains("#true")
+                        || stripped.contains("#false")
+                        || stripped.contains("#null"))) {
+                    hasKdlSignal = true;
+                }
+                if (!hasSemicolon && stripped.contains(";")) {
+                    hasSemicolon = true;
+                }
+            }
+
+            return hasKdlSignal || (hasKdlComment && hasBraceBlock) || hasSemicolon;
         }
 
         @Override
@@ -497,7 +544,7 @@ public final class KdlFormat {
 
         private static boolean isKdlComment(String line) {
             String stripped = line.strip();
-            return stripped.startsWith("//") || stripped.startsWith("/*");
+            return stripped.startsWith("//") || stripped.startsWith("/*") || stripped.startsWith("#");
         }
 
         private static ConfigNode convertValue(String key, KdlValue<?> value) {
