@@ -95,6 +95,48 @@ class MixedFormatTest extends ResourceTestBase {
     }
 
     /**
+     * DOTENV export lines adjacent to TOML {@code [section]} header
+     * (no blank line separator). Should produce 2 sub-blocks: DOTENV and TOML.
+     */
+    @Test
+    void mixedFormatDotenvSectionToml() {
+        ParseResult r = parseResource("edge-cases/mixed-format-dotenv-section-toml.txt");
+
+        assertEquals(2, r.blocks().size(), "Should split into DOTENV and TOML sub-blocks");
+
+        assertBlockFormat(r, Format.DOTENV);
+        assertBlockFormat(r, Format.TOML);
+
+        // DOTENV keys
+        assertTrue(r.flattened().containsKey("APP_NAME"));
+        assertTrue(r.flattened().containsKey("APP_VERSION"));
+        // TOML keys (under [server] section)
+        assertTrue(r.flattened().containsKey("server.host"));
+        assertTrue(r.flattened().containsKey("server.port"));
+    }
+
+    /**
+     * DOTENV export lines adjacent to TOML {@code [[array]]} header
+     * (no blank line separator). Should produce 2 sub-blocks: DOTENV and TOML.
+     */
+    @Test
+    void mixedFormatDotenvToml() {
+        ParseResult r = parseResource("edge-cases/mixed-format-dotenv-toml.txt");
+
+        assertEquals(2, r.blocks().size(), "Should split into DOTENV and TOML sub-blocks");
+
+        assertBlockFormat(r, Format.DOTENV);
+        assertBlockFormat(r, Format.TOML);
+
+        // DOTENV keys
+        assertTrue(r.flattened().containsKey("APP_NAME"));
+        assertTrue(r.flattened().containsKey("APP_PORT"));
+        // TOML keys (under [[products]] array-of-tables)
+        assertTrue(r.flattened().containsKey("products[0].name"));
+        assertTrue(r.flattened().containsKey("products[0].sku"));
+    }
+
+    /**
      * Hinted block with mixed formats. The hint should be honored;
      * no sub-segmentation should occur inside a hinted block.
      * Expect 1 hinted block with PROPERTIES format.

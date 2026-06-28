@@ -403,20 +403,30 @@ public final class PolyconfParser {
         // 1. Two adjacent lines have different non-UNKNOWN formats
         // 2. The left line ends at depth 0 (complete at the top level)
         // 3. The format change has strong structural evidence
+        // OR, as a fallback, the next line is a structural block start marker
         List<Integer> splitAfter = new ArrayList<>();
         for (int i = 0; i < n - 1; i++) {
             Format fmtA = perLineFormats.get(i);
             Format fmtB = perLineFormats.get(i + 1);
-            if (fmtA == Format.UNKNOWN || fmtB == Format.UNKNOWN || fmtA == fmtB) {
-                continue;
-            }
             if (depths.get(i) != 0) {
                 continue;
             }
-            if (!isStrongBoundary(fmtA, blockLines.get(i), fmtB, blockLines.get(i + 1))) {
-                continue;
+            // Standard path: different non-UNKNOWN formats with strong boundary
+            if (fmtA != Format.UNKNOWN && fmtB != Format.UNKNOWN && fmtA != fmtB) {
+                if (isStrongBoundary(fmtA, blockLines.get(i), fmtB, blockLines.get(i + 1))) {
+                    splitAfter.add(i);
+                    continue;
+                }
             }
-            splitAfter.add(i);
+            // Fallback: when format classification can't decide (same/UNKNOWN),
+            // detect structural block starts directly from line content.
+            // Only split when the left format does not natively use
+            // [section]/[[array]] syntax, preventing splits at TOML/INI
+            // section headers when the left line is comment or ambiguous.
+            if (isStructuralBlockStart(blockLines.get(i + 1))
+                    && fmtA != Format.UNKNOWN && !fmtA.usesStructuralSections()) {
+                splitAfter.add(i);
+            }
         }
 
         if (splitAfter.isEmpty()) {
@@ -446,6 +456,9 @@ public final class PolyconfParser {
         if (fmtA == Format.XML || fmtB == Format.XML) {
             return true;
         }
+        if (isSectionHeader(lineB)) {
+            return true;
+        }
         return isBareJsonDelimiter(lineA) || isBareJsonDelimiter(lineB);
     }
 
@@ -453,6 +466,34 @@ public final class PolyconfParser {
         String t = line.strip();
         return t.equals("{") || t.equals("}");
     }
+
+    /**
+     * Returns true if the entire stripped line is a TOML/INI section header
+     * ({@code [name]} or {@code [[name]]}).
+     * Used as a convenience alias for {@link #isStructuralBlockStart(String)}.
+     */
+    private static boolean isSectionHeader(String line) {
+        return isStructuralBlockStart(line);
+    }
+
+    /**
+     * Returns true if the entire stripped line is a structural block start marker:
+     * TOML array-of-tables ({@code [[name]]}) or TOML/INI section header ({@code [name]}).
+     * Excludes empty brackets ({@code []}) and malformed patterns.
+     */
+    static boolean isStructuralBlockStart(String line) {
+        String t = line.strip();
+        // TOML array-of-tables: [[name]]
+        if (t.startsWith("[[") && t.endsWith("]]") && t.length() > 4) {
+            return true;
+        }
+        // TOML/INI section header: [name]
+        if (t.startsWith("[") && !t.startsWith("[[") && t.endsWith("]") && t.length() > 2) {
+            return true;
+        }
+        return false;
+    }
+
 
     private static Hint findHint(List<Hint> hints, int line) {
         for (Hint hint : hints) {
