@@ -30,18 +30,21 @@ public final class Json5Format {
     private Json5Format() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = 0.0;
+        private static final double MAX_RAW = 12.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
-            if (tokens.isEmpty()) return score;
+        public double score(List<Token> tokens) {
+            int raw = 0;
+            if (tokens.isEmpty()) return 0.5;
 
             for (Token t : tokens) {
                 String text = t.text();
 
-                if (text.startsWith("//")) score += 3;
-                if (text.contains("/*") || text.contains("*/")) score += 2;
-                if (text.endsWith(",") && text.length() > 1) score += 3;
-                if (text.contains("'") && !t.isQuoted()) score += 2;
+                if (text.startsWith("//")) raw += 3;
+                if (text.contains("/*") || text.contains("*/")) raw += 2;
+                if (text.endsWith(",") && text.length() > 1) raw += 3;
+                if (text.contains("'") && !t.isQuoted()) raw += 2;
             }
 
             // Unquoted key pattern: WORD followed by colon
@@ -49,11 +52,13 @@ public final class Json5Format {
                 Token current = tokens.get(i);
                 Token next = tokens.get(i + 1);
                 if (next.text().equals(":") && current.kind() == TokenKind.WORD && !current.isQuoted()) {
-                    score += 2;
+                    raw += 2;
                 }
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
     }
 
@@ -170,12 +175,8 @@ public final class Json5Format {
                 return null;
             }
 
-            for (int i = 0; i < bracketDepth; i++) {
-                sb.append(']');
-            }
-            for (int i = 0; i < braceDepth; i++) {
-                sb.append('}');
-            }
+            sb.append("]".repeat(Math.max(0, bracketDepth)));
+            sb.append("}".repeat(Math.max(0, braceDepth)));
 
             return sb.toString();
         }

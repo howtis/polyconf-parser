@@ -7,7 +7,6 @@ import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.ConfigList;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
-import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.parse.LenientParser;
@@ -26,37 +25,42 @@ public final class HoconFormat {
     private HoconFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = 0.0;
+        private static final double MAX_RAW = 15.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
-            if (tokens.isEmpty()) return score;
+        public double score(List<Token> tokens) {
+            int raw = 0;
+            if (tokens.isEmpty()) return 0.5;
 
             for (Token t : tokens) {
                 String text = t.text();
 
-                if (text.contains("${")) score += 4;
-                if (text.equals("include")) score += 3;
-                if (text.contains("\"\"\"")) score += 3;
-                if (text.equals("+=")) score += 3;
+                if (text.contains("${")) raw += 4;
+                if (text.equals("include")) raw += 3;
+                if (text.contains("\"\"\"")) raw += 3;
+                if (text.equals("+=")) raw += 3;
             }
 
             Token first = tokens.get(0);
             if (first.text().equals("{")) {
-                score += 2;
+                raw += 2;
             }
             if (first.text().equals("}")) {
-                score += 2;
+                raw += 2;
             }
 
             // key { block pattern (WORD followed by {)
             if (tokens.size() >= 2 && tokens.get(tokens.size() - 1).text().equals("{")) {
                 Token beforeBrace = tokens.get(tokens.size() - 2);
                 if (beforeBrace.kind() == TokenKind.WORD && !beforeBrace.isQuoted()) {
-                    score += 3;
+                    raw += 3;
                 }
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
 
         @Override

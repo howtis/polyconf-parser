@@ -32,42 +32,48 @@ public final class XmlFormat {
     private XmlFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = 0.0;
+        private static final double MAX_RAW = 14.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
-            if (tokens.isEmpty()) return score;
+        public double score(List<Token> tokens) {
+            int raw = 0;
+            if (tokens.isEmpty()) return 0.5;
 
             Token first = tokens.get(0);
 
-            if (first.kind() == TokenKind.DELIMITER && first.text().equals("<")) {
+            if (first.kind() == TokenKind.DELIMITER
+                    && (first.text().equals("<") || first.text().equals("<?"))) {
+                raw += 5;
+                // <? marks an XML declaration
+                if (first.text().equals("<?")) {
+                    raw += 3;
+                }
                 if (tokens.size() >= 2) {
                     Token second = tokens.get(1);
-                    if (second.kind() == TokenKind.WORD && !second.text().equals("")) {
-                        score += 5;
-                        if (second.text().startsWith("?")) {
-                            score += 3;
-                        }
-                        if (second.text().startsWith("!")) {
-                            score += 3;
-                        }
+                    // <! marks DOCTYPE or CDATA
+                    if (second.kind() == TokenKind.WORD && second.text().startsWith("!")) {
+                        raw += 3;
                     }
                 }
             }
 
             if (first.kind() == TokenKind.DELIMITER && first.text().equals("</")) {
-                score += 5;
+                raw += 5;
             }
 
             for (Token t : tokens) {
                 if (t.kind() == TokenKind.DELIMITER && t.text().equals("/>")) {
-                    score += 3;
+                    raw += 3;
                 }
                 if (t.kind() == TokenKind.DELIMITER && t.text().equals(">")) {
-                    score += 1;
+                    raw += 1;
                 }
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
     }
 

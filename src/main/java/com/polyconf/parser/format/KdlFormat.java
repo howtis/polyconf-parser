@@ -27,16 +27,19 @@ public final class KdlFormat {
     private KdlFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = 0.0;
+        private static final double MAX_RAW = 17.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
-            if (tokens.isEmpty()) return score;
+        public double score(List<Token> tokens) {
+            int raw = 0;
+            if (tokens.isEmpty()) return 0.5;
 
             // Lines starting with # are comments in many non-KDL formats
             // (TOML, INI, YAML, Properties, Dotenv). KDL uses // and /- for comments.
             // Do not award KDL score for these lines.
-            if (!tokens.isEmpty() && tokens.get(0).text().equals("#")) {
-                return 0;
+            if (tokens.get(0).text().equals("#")) {
+                return 0.5;
             }
 
             // KDL identifiers can contain - and other special chars.
@@ -45,7 +48,7 @@ public final class KdlFormat {
                 String text = t.text();
                 if (t.kind() == TokenKind.WORD) {
                     if (text.startsWith("/-")) {
-                        score += 6;
+                        raw += 6;
                     }
                 }
             }
@@ -55,7 +58,7 @@ public final class KdlFormat {
                 String text = t.text();
                 if (t.kind() == TokenKind.WORD) {
                     if ("#true".equals(text) || "#false".equals(text) || "#null".equals(text)) {
-                        score += 4;
+                        raw += 4;
                     }
                 }
             }
@@ -66,10 +69,10 @@ public final class KdlFormat {
                 for (int i = lastIdx - 1; i >= 0; i--) {
                     Token prev = tokens.get(i);
                     if (prev.kind() == TokenKind.WORD) {
-                        score += 3;
+                        raw += 3;
                         // If there's a word argument between name and brace -> stronger
                         if (i > 0 && tokens.get(i - 1).kind() == TokenKind.WORD) {
-                            score += 2;
+                            raw += 2;
                         }
                         break;
                     }
@@ -85,14 +88,14 @@ public final class KdlFormat {
                         && (curr.kind() == TokenKind.WORD || curr.kind() == TokenKind.QUOTED)) {
                     // Make sure there's no = between them
                     boolean hasEquals = false;
-                    for (int j = 0; j < tokens.size(); j++) {
-                        if (tokens.get(j).text().equals("=")) {
+                    for (Token token : tokens) {
+                        if (token.text().equals("=")) {
                             hasEquals = true;
                             break;
                         }
                     }
                     if (!hasEquals) {
-                        score += 2;
+                        raw += 2;
                         break;
                     }
                 }
@@ -101,15 +104,17 @@ public final class KdlFormat {
             // Closing brace at start of line
             Token first = tokens.get(0);
             if (first.text().equals("}")) {
-                score += 2;
+                raw += 2;
             }
 
-            // // comment (C-style comment, not used by other formats in this project)
+            // // comment (C-style comment, strong KDL signal)
             if (first.text().equals("//")) {
-                score += 2;
+                raw += 5;
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
 
         @Override
@@ -122,10 +127,15 @@ public final class KdlFormat {
             boolean hasKdlSignal = false;
             boolean hasDoubleSlashComment = false;
             boolean hasBraceBlock = false;
+            boolean hasKdlNode = false;
 
             for (String line : lines) {
                 String stripped = line.strip();
                 if (stripped.isEmpty()) continue;
+                if (stripped.startsWith("//") || stripped.startsWith("/*")) {
+                    hasDoubleSlashComment = true;
+                    continue;
+                }
 
                 if (!hasKdlSignal) {
                     if (stripped.contains("/-")
@@ -135,15 +145,24 @@ public final class KdlFormat {
                         hasKdlSignal = true;
                     }
                 }
-                if (stripped.startsWith("//")) {
-                    hasDoubleSlashComment = true;
-                }
                 if (stripped.contains("{")) {
                     hasBraceBlock = true;
                 }
+                // KDL node: a line with '{' preceded by non-whitespace content without ':'
+                // (e.g., "server {", "features {"). This distinguishes from JSON's bare "{"
+                // and JSON sub-objects like '"key": {'.
+                if (!hasKdlNode && stripped.contains("{")) {
+                    int bracePos = stripped.indexOf('{');
+                    String beforeBrace = stripped.substring(0, bracePos).strip();
+                    if (!beforeBrace.isEmpty() && !beforeBrace.contains(":")) {
+                        hasKdlNode = true;
+                    }
+                }
             }
 
-            return hasKdlSignal || (hasDoubleSlashComment && hasBraceBlock);
+            return hasKdlSignal
+                    || (hasDoubleSlashComment && hasBraceBlock)
+                    || (hasKdlNode && hasBraceBlock);
         }
     }
 
@@ -268,8 +287,7 @@ public final class KdlFormat {
             // Fallback: if kdl4j parsed the header but produced no args/props,
             // and the header has a node name followed by extra text,
             // treat the extra text as a raw string value.
-            if (kdlNode.arguments().isEmpty()
-                    && (kdlNode.properties() == null || !kdlNode.properties().iterator().hasNext())) {
+            if (kdlNode.arguments().isEmpty() && !kdlNode.properties().iterator().hasNext()) {
                 String nodeName = kdlNode.name();
                 int afterName = header.indexOf(nodeName) + nodeName.length();
                 if (afterName < header.length()) {
@@ -280,7 +298,7 @@ public final class KdlFormat {
             // Leaf node: single argument, no properties, no children
             List<KdlValue<?>> args = kdlNode.arguments();
             KdlProperties props = kdlNode.properties();
-            boolean hasProps = props != null && props.iterator().hasNext();
+            boolean hasProps = props.iterator().hasNext();
             boolean hasChildren = childrenText != null && !childrenText.isEmpty();
 
             if (!hasChildren && !hasProps) {
@@ -300,12 +318,10 @@ public final class KdlFormat {
             }
 
             // Properties
-            if (props != null) {
-                for (Map.Entry<String, List<KdlValue<?>>> prop : props) {
-                    List<KdlValue<?>> values = prop.getValue();
-                    if (!values.isEmpty()) {
-                        contents.put(prop.getKey(), convertValue(prop.getKey(), values.get(0)));
-                    }
+            for (Map.Entry<String, List<KdlValue<?>>> prop : props) {
+                List<KdlValue<?>> values = prop.getValue();
+                if (!values.isEmpty()) {
+                    contents.put(prop.getKey(), convertValue(prop.getKey(), values.get(0)));
                 }
             }
 
@@ -362,19 +378,19 @@ public final class KdlFormat {
                     }
                 }
 
-                if (braceDepth == 0 && current.length() > 0) {
+                if (braceDepth == 0 && !current.isEmpty()) {
                     // Previous child completed, this is a new child
                     result.add(current.toString());
                     current.setLength(0);
                 }
 
-                if (current.length() > 0) {
+                if (!current.isEmpty()) {
                     current.append('\n');
                 }
                 current.append(stripped);
             }
 
-            if (current.length() > 0) {
+            if (!current.isEmpty()) {
                 result.add(current.toString());
             }
 
@@ -445,19 +461,19 @@ public final class KdlFormat {
                     insideNode = true;
                 }
 
-                if (current.length() > 0) {
+                if (!current.isEmpty()) {
                     current.append('\n');
                 }
                 current.append(line);
 
-                if (insideNode && braceDepth == 0) {
+                if (braceDepth == 0) {
                     nodes.add(current.toString());
                     current.setLength(0);
                     insideNode = false;
                 }
             }
 
-            if (current.length() > 0) {
+            if (!current.isEmpty()) {
                 nodes.add(current.toString());
             }
 

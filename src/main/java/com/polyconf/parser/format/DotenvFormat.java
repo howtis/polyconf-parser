@@ -6,11 +6,9 @@ import com.polyconf.parser.classify.TokenKind;
 import com.polyconf.parser.model.BlockDiagnostic;
 import com.polyconf.parser.model.ConfigNode;
 import com.polyconf.parser.model.ConfigSection;
-import com.polyconf.parser.model.ConfigValue;
 import com.polyconf.parser.model.DiagnosticLevel;
 import com.polyconf.parser.model.ParserResult;
 import com.polyconf.parser.model.Provenance;
-import com.polyconf.parser.model.ValueType;
 import com.polyconf.parser.parse.LenientParser;
 import com.polyconf.parser.parse.ValueInference;
 
@@ -36,9 +34,12 @@ public final class DotenvFormat {
         // Dotenv: ALL_CAPS key followed by =, e.g. DB_HOST=localhost, NODE_ENV=test
         private static final Pattern DOTENV_CAPS_ASSIGN = Pattern.compile("^[A-Z_][A-Z0-9_]*\\s*=");
 
+        private static final double MIN_RAW = -3.0;
+        private static final double MAX_RAW = 7.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
+        public double score(List<Token> tokens) {
+            int raw = 0;
             boolean hasIniEquals = false;
             for (Token t : tokens) {
                 if (t.kind() == TokenKind.DELIMITER && t.text().equals("=")
@@ -47,23 +48,25 @@ public final class DotenvFormat {
                 }
             }
             if (hasIniEquals) {
-                score += 1;
+                raw += 1;
             }
             if (!tokens.isEmpty()) {
                 Token first = tokens.get(0);
                 if (first.kind() == TokenKind.WORD && first.isUppercaseStart()
                         && hasEqualsAfter(tokens, 0)) {
-                    score += 2;
+                    raw += 2;
                 }
                 if (first.kind() == TokenKind.WORD && first.text().equalsIgnoreCase("export")) {
-                    score += 4;
+                    raw += 4;
                 }
                 Token last = tokens.get(tokens.size() - 1);
                 if (first.text().equals("[") && last.text().equals("]")) {
-                    score -= 3;
+                    raw -= 3;
                 }
             }
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
 
         private static boolean hasEqualsAfter(List<Token> tokens, int from) {
@@ -153,7 +156,7 @@ public final class DotenvFormat {
                 String value = m.group(2).strip();
 
                 // Handle multiline quoted values
-                if (value.length() >= 1 && (value.charAt(0) == '"' || value.charAt(0) == '\'')) {
+                if (!value.isEmpty() && (value.charAt(0) == '"' || value.charAt(0) == '\'')) {
                     char quote = value.charAt(0);
                     if (value.length() < 2 || value.charAt(value.length() - 1) != quote) {
                         StringBuilder multiline = new StringBuilder(value);

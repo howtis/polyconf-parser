@@ -24,14 +24,17 @@ public final class PropertiesFormat {
     private PropertiesFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = -10.0;
+        private static final double MAX_RAW = 8.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
+        public double score(List<Token> tokens) {
+            int raw = 0;
             if (!tokens.isEmpty()) {
                 Token first = tokens.get(0);
                 Token last = tokens.get(tokens.size() - 1);
                 if (first.text().equals("[") && last.text().equals("]")) {
-                    score -= 2;
+                    raw -= 2;
                 }
             }
 
@@ -55,46 +58,48 @@ public final class PropertiesFormat {
             }
 
             if (hasIniEquals) {
-                score += 2;
+                raw += 2;
                 if (hasDottedKeyBeforeEquals(tokens)) {
-                    score += 3;
+                    raw += 3;
                 }
             }
 
             if (hasColon && !hasEquals && !firstIsDelim) {
-                score += hasDottedKeyBeforeColon(tokens) ? 3 : 1;
-                score -= 3;
+                raw += hasDottedKeyBeforeColon(tokens) ? 3 : 1;
+                raw -= 3;
             }
 
             if (!tokens.isEmpty()) {
                 Token last = tokens.get(tokens.size() - 1);
                 if (last.text().endsWith("\\")) {
-                    score += 3;
+                    raw += 3;
                 }
             }
 
             // Negative scoring: patterns that clearly belong to KDL
             // // comments are KDL, not Properties
             if (!tokens.isEmpty() && tokens.get(0).text().equals("//")) {
-                score -= 4;
+                raw -= 4;
             }
             // KDL booleans/null
             for (Token t : tokens) {
                 String text = t.text();
                 if ("#true".equals(text) || "#false".equals(text) || "#null".equals(text)) {
-                    score -= 4;
+                    raw -= 4;
                     break;
                 }
             }
             // KDL-style escaped quotes in values
             for (Token t : tokens) {
                 if (t.text().contains("\\\"")) {
-                    score -= 3;
+                    raw -= 3;
                     break;
                 }
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
 
         private static boolean hasDottedKeyBeforeEquals(List<Token> tokens) {
@@ -174,7 +179,7 @@ public final class PropertiesFormat {
                     current.setLength(0);
                 }
             }
-            if (current.length() > 0) {
+            if (!current.isEmpty()) {
                 result.add(current.toString());
             }
             return result;

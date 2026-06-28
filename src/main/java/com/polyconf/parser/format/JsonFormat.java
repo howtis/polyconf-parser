@@ -1,10 +1,7 @@
 package com.polyconf.parser.format;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
 import com.polyconf.parser.classify.FormatDetector;
@@ -32,15 +29,18 @@ public final class JsonFormat {
     private JsonFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = 0.0;
+        private static final double MAX_RAW = 8.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
-            if (tokens.isEmpty()) return score;
+        public double score(List<Token> tokens) {
+            int raw = 0;
+            if (tokens.isEmpty()) return 0.5;
 
             Token first = tokens.get(0);
 
             if (first.text().equals("{")) {
-                score += 5;
+                raw += 5;
             } else if (first.text().equals("[")) {
                 boolean hasColonOrQuote = false;
                 for (Token t : tokens) {
@@ -50,12 +50,12 @@ public final class JsonFormat {
                     }
                 }
                 if (hasColonOrQuote || tokens.size() == 1) {
-                    score += 5;
+                    raw += 5;
                 }
             }
 
             if (first.text().equals("}") || first.text().equals("]")) {
-                score += 3;
+                raw += 3;
             }
 
             if (first.isQuoted()) {
@@ -67,34 +67,32 @@ public final class JsonFormat {
                     }
                 }
                 if (hasColonAfter) {
-                    score += 3;
+                    raw += 3;
                 }
             }
 
             if (tokens.size() == 1 && first.kind() == TokenKind.WORD) {
                 String t = first.text();
                 if (t.equals("true") || t.equals("false") || t.equals("null")) {
-                    score += 2;
+                    raw += 2;
                 }
             }
 
             if (tokens.size() == 1 && first.isQuoted()) {
-                score += 2;
+                raw += 2;
             }
 
             if (tokens.size() == 1 && first.kind() == TokenKind.WORD && first.isNumberLiteral()) {
-                score += 1;
+                raw += 1;
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
     }
 
     public static final class Parser implements LenientParser {
-
-        private static final Gson GSON = new GsonBuilder()
-                .setLenient()
-                .create();
 
         @Override
         public ParserResult parse(List<String> lines) {

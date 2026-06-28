@@ -25,24 +25,27 @@ public final class YamlFormat {
     private YamlFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = -7.0;
+        private static final double MAX_RAW = 5.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
+        public double score(List<Token> tokens) {
+            int raw = 0;
             if (tokens.size() == 1) {
                 Token only = tokens.get(0);
                 if (only.kind() == TokenKind.WORD
                         && (only.text().equals("---") || only.text().equals("..."))) {
-                    score += 5;
+                    raw += 5;
                 }
             }
 
             if (!tokens.isEmpty()) {
                 Token first = tokens.get(0);
                 if (first.text().equals("{") || first.text().equals("[")) {
-                    score -= 2;
+                    raw -= 2;
                 }
                 if (first.text().equals("}") || first.text().equals("]")) {
-                    score -= 2;
+                    raw -= 2;
                 }
             }
 
@@ -60,7 +63,7 @@ public final class YamlFormat {
                 if (t.text().equals("=")) {
                     hasEquals = true;
                     if (!isListItem) {
-                        score -= 5;
+                        raw -= 5;
                     }
                 }
             }
@@ -72,9 +75,11 @@ public final class YamlFormat {
                 if (firstNonBlank != null && firstNonBlank.isQuoted()) {
                     base = Math.max(1, base - 2);
                 }
-                score += base;
+                raw += base;
             }
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
 
         private static Token findFirstNonDelimiter(List<Token> tokens) {
@@ -125,7 +130,7 @@ public final class YamlFormat {
                     for (int i = 0; i < docList.size(); i++) {
                         children.put(String.valueOf(i), convertDocument(String.valueOf(i), docList.get(i)));
                     }
-                } else if (docList.size() == 1) {
+                } else {
                     Object loaded = docList.get(0);
                     if (loaded instanceof Map) {
                         @SuppressWarnings("unchecked")

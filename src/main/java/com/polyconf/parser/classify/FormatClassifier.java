@@ -22,7 +22,7 @@ public final class FormatClassifier {
         if (signatureHit != Format.UNKNOWN) {
             return signatureHit;
         }
-        return classifyByScore(lines);
+        return classifyByConfidence(lines);
     }
 
     private static Format detectBySignature(List<String> lines) {
@@ -40,35 +40,35 @@ public final class FormatClassifier {
                 .orElse(Format.UNKNOWN);
     }
 
-    private static Format classifyByScore(List<String> lines) {
-        Map<Format, Integer> scores = scoreMap(lines);
+    private static Format classifyByConfidence(List<String> lines) {
+        Map<Format, Double> confidences = confidenceMap(lines);
 
         Format bestFormat = null;
-        int bestScore = 0;
+        double bestConfidence = 0.0;
         boolean tie = false;
 
-        for (Map.Entry<Format, Integer> entry : scores.entrySet()) {
+        for (Map.Entry<Format, Double> entry : confidences.entrySet()) {
             Format format = entry.getKey();
             if (format == Format.UNKNOWN) {
                 continue;
             }
-            int s = entry.getValue();
-            if (s > bestScore) {
-                bestScore = s;
+            double c = entry.getValue();
+            if (c > bestConfidence + 0.001) {
+                bestConfidence = c;
                 bestFormat = format;
                 tie = false;
-            } else if (s == bestScore && bestScore > 0) {
+            } else if (Math.abs(c - bestConfidence) <= 0.001 && bestConfidence > 0.0) {
                 tie = true;
             }
         }
 
-        if (bestScore == 0 || tie) {
+        if (bestConfidence < 0.2 || tie) {
             return Format.UNKNOWN;
         }
         return bestFormat;
     }
 
-    public static Map<Format, Integer> scoreMap(List<String> lines) {
+    public static Map<Format, Double> confidenceMap(List<String> lines) {
         if (lines == null) {
             throw new IllegalArgumentException("lines must not be null");
         }
@@ -76,15 +76,23 @@ public final class FormatClassifier {
             return Map.of();
         }
 
-        Map<Format, Integer> scores = new LinkedHashMap<>();
+        Map<Format, Double> sums = new LinkedHashMap<>();
+        Map<Format, Integer> counts = new LinkedHashMap<>();
         for (String line : lines) {
             String t = line.strip();
             if (t.isEmpty() || HINT_LINE.matcher(line).matches()) {
                 continue;
             }
-            scoreLine(t, scores);
+            scoreLine(t, sums, counts);
         }
-        return scores;
+
+        Map<Format, Double> confidences = new LinkedHashMap<>();
+        for (Map.Entry<Format, Double> entry : sums.entrySet()) {
+            Format format = entry.getKey();
+            int count = counts.getOrDefault(format, 0);
+            confidences.put(format, count > 0 ? entry.getValue() / count : 0.5);
+        }
+        return confidences;
     }
 
     public static List<Format> classifyPerLine(List<String> lines) {
@@ -113,7 +121,7 @@ public final class FormatClassifier {
 
         List<Token> tokens = LineTokenizer.tokenize(strippedLine);
         Format bestFormat = Format.UNKNOWN;
-        int bestScore = 0;
+        double bestConfidence = 0.0;
         boolean tie = false;
 
         for (Format format : Format.registeredFormats()) {
@@ -121,33 +129,32 @@ public final class FormatClassifier {
             if (detector == null) {
                 continue;
             }
-            int s = detector.score(tokens);
-            if (s > bestScore) {
-                bestScore = s;
+            double c = detector.score(tokens);
+            if (c > bestConfidence + 0.001) {
+                bestConfidence = c;
                 bestFormat = format;
                 tie = false;
-            } else if (s == bestScore && bestScore > 0) {
+            } else if (Math.abs(c - bestConfidence) <= 0.001 && bestConfidence > 0.0) {
                 tie = true;
             }
         }
 
-        if (bestScore == 0 || tie) {
+        if (bestConfidence < 0.2 || tie) {
             return Format.UNKNOWN;
         }
         return bestFormat;
     }
 
-    private static void scoreLine(String t, Map<Format, Integer> scores) {
+    private static void scoreLine(String t, Map<Format, Double> sums, Map<Format, Integer> counts) {
         List<Token> tokens = LineTokenizer.tokenize(t);
         for (Format format : Format.registeredFormats()) {
             FormatDetector detector = format.detector().orElse(null);
             if (detector == null) {
                 continue;
             }
-            int s = detector.score(tokens);
-            if (s != 0) {
-                scores.merge(format, s, Integer::sum);
-            }
+            double s = detector.score(tokens);
+            sums.merge(format, s, Double::sum);
+            counts.merge(format, 1, Integer::sum);
         }
     }
 

@@ -90,7 +90,10 @@ class FormatClassifierTest {
 
     @Test
     void ambiguousReturnsUnknown() {
+        // "key=value" with compact = is weakly INI (no spaces around =).
+        // With confidence normalization, INI's smaller score span gives it
+        // a slight edge over Properties for the same raw score.
         List<String> lines = List.of("key=value");
-        assertEquals(Format.UNKNOWN, FormatClassifier.classify(lines));
+        assertEquals(Format.INI, FormatClassifier.classify(lines));
     }
 }

@@ -32,15 +32,18 @@ public final class TomlFormat {
     private TomlFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = -5.0;
+        private static final double MAX_RAW = 8.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
+        public double score(List<Token> tokens) {
+            int raw = 0;
             if (tokens.size() >= 2) {
                 Token first = tokens.get(0);
                 if (first.kind() == TokenKind.DELIMITER && first.text().equals("[[")) {
                     for (int i = 1; i < tokens.size(); i++) {
                         if (tokens.get(i).text().equals("]]")) {
-                            score += 5;
+                            raw += 5;
                             break;
                         }
                     }
@@ -48,7 +51,7 @@ public final class TomlFormat {
                 if (first.kind() == TokenKind.DELIMITER && first.text().equals("[")) {
                     for (int i = 1; i < tokens.size(); i++) {
                         if (tokens.get(i).text().equals("]")) {
-                            score += 2;
+                            raw += 2;
                             break;
                         }
                     }
@@ -57,14 +60,16 @@ public final class TomlFormat {
             for (Token t : tokens) {
                 if (t.kind() == TokenKind.DELIMITER && t.text().equals("=")
                         && t.spaceBefore() && t.spaceAfter()) {
-                    score += 3;
+                    raw += 3;
                 }
                 if (t.kind() == TokenKind.DELIMITER
                         && (t.text().equals("{") || t.text().equals("}"))) {
-                    score -= 5;
+                    raw -= 5;
                 }
             }
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
     }
 
@@ -149,16 +154,14 @@ public final class TomlFormat {
             if (value == null) {
                 return new ConfigValue(key, null, ValueType.NULL, null, "");
             }
-            if (value instanceof TomlTable) {
+            if (value instanceof TomlTable table) {
                 Map<String, ConfigNode> children = new LinkedHashMap<>();
-                TomlTable table = (TomlTable) value;
                 for (String entryKey : table.keySet()) {
                     children.put(entryKey, convertValue(entryKey, table.get(entryKey), toml));
                 }
                 return new ConfigSection(key, children, null, "");
             }
-            if (value instanceof TomlArray) {
-                TomlArray array = (TomlArray) value;
+            if (value instanceof TomlArray array) {
                 List<ConfigNode> items = new ArrayList<>();
                 for (int i = 0; i < array.size(); i++) {
                     items.add(convertValue(String.valueOf(i), array.get(i), toml));

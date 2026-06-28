@@ -24,15 +24,18 @@ public final class IniFormat {
     private IniFormat() {}
 
     public static final class Detector extends FormatDetector {
+        private static final double MIN_RAW = -8.0;
+        private static final double MAX_RAW = 5.0;
+
         @Override
-        public int score(List<Token> tokens) {
-            int score = 0;
+        public double score(List<Token> tokens) {
+            int raw = 0;
             if (tokens.size() >= 2) {
                 Token first = tokens.get(0);
                 if (first.kind() == TokenKind.DELIMITER && first.text().equals("[")) {
                     for (int i = 1; i < tokens.size(); i++) {
                         if (tokens.get(i).text().equals("]")) {
-                            score += 2;
+                            raw += 2;
                             break;
                         }
                     }
@@ -45,16 +48,16 @@ public final class IniFormat {
                     hasIniEquals = true;
                 }
                 if (t.text().equals(";")) {
-                    score += 1;
+                    raw += 1;
                 }
                 if (t.text().equals("[[")) {
-                    score -= 3;
+                    raw -= 3;
                 }
             }
             if (hasIniEquals) {
-                score += 2;
+                raw += 2;
                 if (hasDottedKeyBeforeEquals(tokens)) {
-                    score -= 1;
+                    raw -= 1;
                 }
             }
 
@@ -63,22 +66,24 @@ public final class IniFormat {
             if (!tokens.isEmpty() && tokens.get(0).text().equals("#")) {
                 // # followed by content that is not a section header [section]
                 if (tokens.size() < 2 || !tokens.get(1).text().equals("[")) {
-                    score -= 2;
+                    raw -= 2;
                 }
             }
             // KDL-style escaped quotes
             for (Token t : tokens) {
                 if (t.text().contains("\\\"")) {
-                    score -= 3;
+                    raw -= 3;
                     break;
                 }
             }
             // // comments belong to KDL, not INI
             if (!tokens.isEmpty() && tokens.get(0).text().equals("//")) {
-                score -= 3;
+                raw -= 3;
             }
 
-            return score;
+            double span = MAX_RAW - MIN_RAW;
+            double confidence = 0.5 + raw / span;
+            return Math.max(0.0, Math.min(1.0, confidence));
         }
 
         private static boolean hasDottedKeyBeforeEquals(List<Token> tokens) {
@@ -219,7 +224,7 @@ public final class IniFormat {
                 }
             }
             // Remove trailing newline to avoid extra blank line
-            if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
+            if (!sb.isEmpty() && sb.charAt(sb.length() - 1) == '\n') {
                 sb.setLength(sb.length() - 1);
             }
             return sb.toString();
